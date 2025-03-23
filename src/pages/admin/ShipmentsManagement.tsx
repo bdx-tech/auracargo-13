@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { 
   Table, 
@@ -13,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, Filter, Package, Eye, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import CreateShipmentModal from "@/components/CreateShipmentModal";
 
 interface Shipment {
   id: string;
@@ -33,43 +33,44 @@ const ShipmentsManagement = () => {
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   useEffect(() => {
-    const fetchShipments = async () => {
-      setIsLoading(true);
-      setError(null);
-      
-      try {
-        const { data, error } = await supabase
-          .from('shipments')
-          .select(`
-            id,
-            tracking_number,
-            origin,
-            destination,
-            status,
-            created_at,
-            profiles:user_id (
-              email,
-              first_name,
-              last_name
-            )
-          `)
-          .order('created_at', { ascending: false });
-        
-        if (error) throw error;
-        
-        setShipments(data || []);
-      } catch (err: any) {
-        console.error('Error fetching shipments:', err.message);
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
     fetchShipments();
   }, []);
+  
+  const fetchShipments = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const { data, error } = await supabase
+        .from('shipments')
+        .select(`
+          id,
+          tracking_number,
+          origin,
+          destination,
+          status,
+          created_at,
+          profiles:user_id (
+            email,
+            first_name,
+            last_name
+          )
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      setShipments(data || []);
+    } catch (err: any) {
+      console.error('Error fetching shipments:', err.message);
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
   const filteredShipments = shipments.filter(shipment => 
     shipment.tracking_number.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -99,6 +100,10 @@ const ShipmentsManagement = () => {
     return shipment.profiles.email;
   };
 
+  const handleShipmentCreated = () => {
+    fetchShipments();
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -122,7 +127,7 @@ const ShipmentsManagement = () => {
             <Filter className="mr-2 h-4 w-4" />
             Filter
           </Button>
-          <Button size="sm">
+          <Button size="sm" onClick={() => setShowCreateModal(true)}>
             <Package className="mr-2 h-4 w-4" />
             New Shipment
           </Button>
@@ -184,6 +189,12 @@ const ShipmentsManagement = () => {
           </Table>
         )}
       </div>
+
+      <CreateShipmentModal 
+        open={showCreateModal} 
+        onOpenChange={setShowCreateModal}
+        onSuccess={handleShipmentCreated}
+      />
     </div>
   );
 };
