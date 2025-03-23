@@ -1,5 +1,1 @@
-
 project_id = "qkszvkszjvacqqwhyqab"
-[functions.create-notification]
-verify_jwt = false
-
