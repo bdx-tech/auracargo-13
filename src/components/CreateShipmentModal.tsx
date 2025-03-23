@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface CreateShipmentModalProps {
   open: boolean;
@@ -22,6 +23,7 @@ const CreateShipmentModal: React.FC<CreateShipmentModalProps> = ({
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     origin: "",
@@ -55,7 +57,7 @@ const CreateShipmentModal: React.FC<CreateShipmentModalProps> = ({
           weight: formData.weight ? parseFloat(formData.weight) : null,
           dimensions: formData.dimensions || null,
           service_type: formData.service_type,
-          status: 'pending',
+          status: 'Pending',
           tracking_number: trackingNumber,
           user_id: user.id
         }])
@@ -68,13 +70,13 @@ const CreateShipmentModal: React.FC<CreateShipmentModalProps> = ({
         .from('notifications')
         .insert([{
           title: "New Shipment Created",
-          content: `Your shipment to ${formData.destination} has been created with tracking number ${trackingNumber}.`,
+          content: `Your shipment to ${formData.destination} has been created with tracking number ${trackingNumber} and is pending approval.`,
           user_id: user.id
         }]);
       
       toast({
         title: "Success!",
-        description: "Your shipment has been created.",
+        description: "Your shipment has been created and is pending approval.",
       });
       
       // Reset form and close modal
@@ -87,7 +89,11 @@ const CreateShipmentModal: React.FC<CreateShipmentModalProps> = ({
       });
       
       onOpenChange(false);
+      
       if (onSuccess) onSuccess();
+      
+      // Navigate to dashboard or shipment tracking page
+      navigate(`/dashboard`);
       
     } catch (error: any) {
       console.error("Error creating shipment:", error);
@@ -107,7 +113,7 @@ const CreateShipmentModal: React.FC<CreateShipmentModalProps> = ({
         <DialogHeader>
           <DialogTitle>Create New Shipment</DialogTitle>
           <DialogDescription>
-            Enter the shipment details below to create a new shipment.
+            Enter the shipment details below to create a new shipment. It will be reviewed by our team.
           </DialogDescription>
         </DialogHeader>
         

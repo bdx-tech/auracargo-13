@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { 
   Table, 
@@ -10,9 +11,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter, Package, Eye, Pencil } from "lucide-react";
+import { Search, Filter, Package, Eye, Pencil, CheckCircle, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import CreateShipmentModal from "@/components/CreateShipmentModal";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Shipment {
   id: string;
@@ -34,6 +36,7 @@ const ShipmentsManagement = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchShipments();
@@ -83,6 +86,8 @@ const ShipmentsManagement = () => {
       case "In Transit": return "secondary";
       case "Processing": return "secondary";
       case "Delayed": return "destructive";
+      case "Pending": return "outline";
+      case "Approved": return "success";
       default: return "outline";
     }
   };
@@ -102,6 +107,110 @@ const ShipmentsManagement = () => {
 
   const handleShipmentCreated = () => {
     fetchShipments();
+  };
+  
+  const handleApproveShipment = async (shipmentId: string) => {
+    try {
+      const { error } = await supabase
+        .from('shipments')
+        .update({ status: 'Approved' })
+        .eq('id', shipmentId);
+        
+      if (error) throw error;
+      
+      // Create tracking event for approval
+      await supabase
+        .from('tracking_events')
+        .insert({
+          shipment_id: shipmentId,
+          event_type: 'approved',
+          description: 'Shipment has been approved',
+          location: 'Processing Center'
+        });
+      
+      // Create a notification for the user
+      const { data: shipmentData } = await supabase
+        .from('shipments')
+        .select('user_id, tracking_number')
+        .eq('id', shipmentId)
+        .single();
+        
+      if (shipmentData?.user_id) {
+        await supabase
+          .from('notifications')
+          .insert({
+            user_id: shipmentData.user_id,
+            title: 'Shipment Approved',
+            content: `Your shipment #${shipmentData.tracking_number} has been approved and is being processed.`
+          });
+      }
+      
+      toast({
+        title: "Shipment Approved",
+        description: "The shipment has been approved successfully."
+      });
+      
+      fetchShipments();
+    } catch (err: any) {
+      console.error('Error approving shipment:', err);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: err.message || "Failed to approve shipment."
+      });
+    }
+  };
+  
+  const handleRejectShipment = async (shipmentId: string) => {
+    try {
+      const { error } = await supabase
+        .from('shipments')
+        .update({ status: 'Rejected' })
+        .eq('id', shipmentId);
+        
+      if (error) throw error;
+      
+      // Create tracking event for rejection
+      await supabase
+        .from('tracking_events')
+        .insert({
+          shipment_id: shipmentId,
+          event_type: 'rejected',
+          description: 'Shipment has been rejected',
+          location: 'Processing Center'
+        });
+      
+      // Create a notification for the user
+      const { data: shipmentData } = await supabase
+        .from('shipments')
+        .select('user_id, tracking_number')
+        .eq('id', shipmentId)
+        .single();
+        
+      if (shipmentData?.user_id) {
+        await supabase
+          .from('notifications')
+          .insert({
+            user_id: shipmentData.user_id,
+            title: 'Shipment Rejected',
+            content: `Your shipment #${shipmentData.tracking_number} has been rejected. Please contact customer service for more information.`
+          });
+      }
+      
+      toast({
+        title: "Shipment Rejected",
+        description: "The shipment has been rejected."
+      });
+      
+      fetchShipments();
+    } catch (err: any) {
+      console.error('Error rejecting shipment:', err);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: err.message || "Failed to reject shipment."
+      });
+    }
   };
 
   return (
@@ -168,12 +277,42 @@ const ShipmentsManagement = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          title="View details"
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon">
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          title="Edit shipment"
+                        >
                           <Pencil className="h-4 w-4" />
                         </Button>
+                        {shipment.status === "Pending" && (
+                          <>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                              title="Approve shipment"
+                              onClick={() => handleApproveShipment(shipment.id)}
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              title="Reject shipment"
+                              onClick={() => handleRejectShipment(shipment.id)}
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

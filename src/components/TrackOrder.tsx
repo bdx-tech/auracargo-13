@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { useNavigate } from "react-router-dom";
 
 const TrackOrder = () => {
   const [trackingNumber, setTrackingNumber] = useState("");
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleTrack = (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,11 +22,8 @@ const TrackOrder = () => {
       return;
     }
 
-    // In a real app, this would connect to your tracking API
-    toast({
-      title: "Tracking Request Received",
-      description: `We're tracking your order: ${trackingNumber}`,
-    });
+    // Navigate to tracking page with the tracking number
+    navigate(`/tracking/${trackingNumber}`);
   };
 
   return (
