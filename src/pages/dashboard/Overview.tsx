@@ -21,9 +21,10 @@ import {
 
 interface OverviewPageProps {
   userId: string | undefined;
+  setActiveTab: (tab: string) => void;
 }
 
-const OverviewPage: React.FC<OverviewPageProps> = ({ userId }) => {
+const OverviewPage: React.FC<OverviewPageProps> = ({ userId, setActiveTab }) => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalShipments: 0,
@@ -75,52 +76,7 @@ const OverviewPage: React.FC<OverviewPageProps> = ({ userId }) => {
       
       if (shipmentsError) throw shipmentsError;
       
-      // Fetch notifications (we'll create this table if it doesn't exist)
-      // For now, fetch recent shipment status changes as notifications
-      const { data: notifs, error: notifsError } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(3);
-      
-      if (notifsError && notifsError.code !== 'PGRST116') {
-        // PGRST116 means the table doesn't exist, which we'll handle
-        throw notifsError;
-      }
-      
-      setStats({
-        totalShipments: totalCount || 0,
-        activeShipments: activeCount || 0,
-        pendingApprovals: pendingCount || 0
-      });
-      
-      setRecentShipments(shipments || []);
-      setNotifications(notifs || []);
-      
-      // If notifications table doesn't exist, create it with some sample data
-      if (notifsError && notifsError.code === 'PGRST116') {
-        await setupNotificationsTable(userId);
-      }
-      
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      toast({
-        variant: "destructive",
-        title: "Error loading dashboard",
-        description: "Failed to load dashboard data. Please try again later."
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const setupNotificationsTable = async (userId: string) => {
-    try {
-      // We can't create tables from the client side directly with Supabase
-      // Instead, in a real app, you'd do this via a migration or supabase function
-      // For now, let's just create sample notification data for our UI
-      
+      // For notifications, we'll create sample data since there's no notifications table
       const sampleNotifications = [
         {
           id: 1,
@@ -145,10 +101,24 @@ const OverviewPage: React.FC<OverviewPageProps> = ({ userId }) => {
         }
       ];
       
+      setStats({
+        totalShipments: totalCount || 0,
+        activeShipments: activeCount || 0,
+        pendingApprovals: pendingCount || 0
+      });
+      
+      setRecentShipments(shipments || []);
       setNotifications(sampleNotifications);
       
     } catch (error) {
-      console.error('Error setting up notifications:', error);
+      console.error('Error fetching dashboard data:', error);
+      toast({
+        variant: "destructive",
+        title: "Error loading dashboard",
+        description: "Failed to load dashboard data. Please try again later."
+      });
+    } finally {
+      setLoading(false);
     }
   };
   

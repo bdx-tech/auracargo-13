@@ -67,11 +67,11 @@ const Dashboard = () => {
           
           {/* Main Content */}
           <div className="flex-1">
-            {activeTab === "overview" && <OverviewPage userId={user?.id} />}
+            {activeTab === "overview" && <OverviewPage userId={user?.id} setActiveTab={setActiveTab} />}
             {activeTab === "shipments" && <ShipmentsPage userId={user?.id} />}
             {activeTab === "documents" && <DocumentsPage userId={user?.id} />}
             {activeTab === "payments" && <PaymentsPage userId={user?.id} />}
-            {activeTab === "settings" && <SettingsPage userId={user?.id} userProfile={userProfile} />}
+            {activeTab === "settings" && <SettingsPage userProfile={userProfile} />}
           </div>
         </div>
       </div>

@@ -23,15 +23,29 @@ interface PaymentsPageProps {
   userId: string | undefined;
 }
 
+interface Payment {
+  id: string;
+  amount: number;
+  created_at: string;
+  status: string;
+  payment_method: string;
+  currency: string;
+  transaction_id: string | null;
+  shipment_id: string | null;
+  updated_at: string;
+  user_id: string | null;
+  shipments?: any;
+}
+
 const PaymentsPage: React.FC<PaymentsPageProps> = ({ userId }) => {
-  const [invoices, setInvoices] = useState([]);
+  const [invoices, setInvoices] = useState<Payment[]>([]);
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [stats, setStats] = useState({
     totalPaid: 0,
     outstanding: 0,
-    nextDueDate: null,
+    nextDueDate: null as string | null,
     nextDueAmount: 0,
     nextDueInvoice: ""
   });
@@ -70,14 +84,18 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ userId }) => {
           
           const pendingInvoices = paymentsData
             .filter(p => p.status === 'Pending' || p.status === 'pending')
-            .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+            .map(p => ({
+              ...p,
+              calculatedDueDate: new Date(new Date(p.created_at).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
+            }))
+            .sort((a, b) => new Date(a.calculatedDueDate).getTime() - new Date(b.calculatedDueDate).getTime());
           
           setStats({
             totalPaid: paid,
             outstanding: pending,
-            nextDueDate: pendingInvoices[0]?.due_date || null,
-            nextDueAmount: pendingInvoices[0]?.amount || 0,
-            nextDueInvoice: pendingInvoices[0]?.id || ""
+            nextDueDate: pendingInvoices.length > 0 ? pendingInvoices[0].calculatedDueDate : null,
+            nextDueAmount: pendingInvoices.length > 0 ? pendingInvoices[0].amount : 0,
+            nextDueInvoice: pendingInvoices.length > 0 ? pendingInvoices[0].id : ""
           });
         }
       }
@@ -130,6 +148,13 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ userId }) => {
     } else {
       return null;
     }
+  };
+
+  const calculateDueDate = (createdAt: string) => {
+    const created = new Date(createdAt);
+    const dueDate = new Date(created);
+    dueDate.setDate(created.getDate() + 30);
+    return dueDate;
   };
 
   return (
@@ -273,7 +298,7 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ userId }) => {
                           <TableCell className="font-medium">{invoice.id}</TableCell>
                           <TableCell>${Number(invoice.amount).toFixed(2)}</TableCell>
                           <TableCell>{new Date(invoice.created_at).toLocaleDateString()}</TableCell>
-                          <TableCell>{invoice.due_date ? new Date(invoice.due_date).toLocaleDateString() : 'N/A'}</TableCell>
+                          <TableCell>{calculateDueDate(invoice.created_at).toLocaleDateString()}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               {getStatusIcon(invoice.status)}
