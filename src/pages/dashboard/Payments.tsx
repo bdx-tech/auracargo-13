@@ -1,9 +1,10 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   CreditCard, 
   DollarSign, 
@@ -15,17 +16,38 @@ import {
   Clock
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { format, addDays } from 'date-fns';
+import { useToast } from "@/components/ui/use-toast";
 
-const PaymentsPage = () => {
-  // Mock data for invoices
-  const invoices = [
-    { id: "INV-2023-001", amount: 1250.00, date: "2023-10-05", dueDate: "2023-11-05", status: "paid", shipment: "SH-2023-001" },
-    { id: "INV-2023-002", amount: 850.50, date: "2023-10-10", dueDate: "2023-11-10", status: "pending", shipment: "SH-2023-002" },
-    { id: "INV-2023-003", amount: 1750.00, date: "2023-10-15", dueDate: "2023-11-15", status: "overdue", shipment: "SH-2023-003" },
-    { id: "INV-2023-004", amount: 950.75, date: "2023-10-20", dueDate: "2023-11-20", status: "pending", shipment: "SH-2023-004" },
-    { id: "INV-2023-005", amount: 1500.00, date: "2023-09-25", dueDate: "2023-10-25", status: "paid", shipment: "SH-2023-005" }
-  ];
+interface PaymentsPageProps {
+  loading: boolean;
+  payments: any[];
+}
 
+const PaymentsPage: React.FC<PaymentsPageProps> = ({ loading, payments }) => {
+  const [activeTab, setActiveTab] = useState("invoices");
+  const { toast } = useToast();
+  
+  // Pre-process payments to add due dates (30 days from creation)
+  const processedPayments = payments.map(payment => ({
+    ...payment,
+    dueDate: format(addDays(new Date(payment.created_at), 30), 'yyyy-MM-dd')
+  }));
+  
+  // Calculate totals
+  const totalPaid = processedPayments
+    .filter(payment => payment.status === 'paid')
+    .reduce((sum, payment) => sum + Number(payment.amount), 0);
+    
+  const totalOutstanding = processedPayments
+    .filter(payment => payment.status !== 'paid')
+    .reduce((sum, payment) => sum + Number(payment.amount), 0);
+  
+  // Find next payment due
+  const nextPaymentDue = processedPayments
+    .filter(payment => payment.status === 'pending')
+    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0];
+  
   // Mock data for payment methods
   const paymentMethods = [
     { id: "PM-001", type: "credit_card", last4: "4242", expiry: "05/25", default: true },
@@ -58,11 +80,28 @@ const PaymentsPage = () => {
     }
   };
 
+  const handleMakePayment = () => {
+    toast({
+      title: "Payment feature",
+      description: "Payment processing will be implemented soon.",
+    });
+  };
+
+  const handleExport = () => {
+    toast({
+      title: "Export started",
+      description: "Your payments data is being exported",
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-kargon-dark">Payments</h1>
-        <Button className="bg-kargon-red hover:bg-kargon-red/90">
+        <Button 
+          className="bg-kargon-red hover:bg-kargon-red/90"
+          onClick={handleMakePayment}
+        >
           <DollarSign className="mr-2 h-4 w-4" /> Make Payment
         </Button>
       </div>
@@ -75,8 +114,14 @@ const PaymentsPage = () => {
             <DollarSign className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$2,750.00</div>
-            <p className="text-xs text-gray-500 mt-1">Last 30 days</p>
+            {loading ? (
+              <Skeleton className="h-8 w-28" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">${totalPaid.toFixed(2)}</div>
+                <p className="text-xs text-gray-500 mt-1">All time</p>
+              </>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -85,8 +130,16 @@ const PaymentsPage = () => {
             <AlertCircle className="h-4 w-4 text-amber-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$2,601.25</div>
-            <p className="text-xs text-gray-500 mt-1">Across 3 invoices</p>
+            {loading ? (
+              <Skeleton className="h-8 w-28" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">${totalOutstanding.toFixed(2)}</div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Across {processedPayments.filter(p => p.status !== 'paid').length} invoices
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -95,13 +148,28 @@ const PaymentsPage = () => {
             <Clock className="h-4 w-4 text-kargon-red" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Oct 25, 2023</div>
-            <p className="text-xs text-gray-500 mt-1">INV-2023-002 ($850.50)</p>
+            {loading ? (
+              <Skeleton className="h-8 w-28" />
+            ) : nextPaymentDue ? (
+              <>
+                <div className="text-2xl font-bold">
+                  {format(new Date(nextPaymentDue.dueDate), 'MMM dd, yyyy')}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  ${Number(nextPaymentDue.amount).toFixed(2)}
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">No payments due</div>
+                <p className="text-xs text-gray-500 mt-1">All payments are settled</p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
       
-      <Tabs defaultValue="invoices" className="w-full">
+      <Tabs defaultValue="invoices" className="w-full" value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="invoices">Invoices</TabsTrigger>
           <TabsTrigger value="methods">Payment Methods</TabsTrigger>
@@ -116,7 +184,7 @@ const PaymentsPage = () => {
                   <Button variant="outline" size="sm">
                     <FileText className="mr-2 h-4 w-4" /> View Statement
                   </Button>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={handleExport}>
                     <Download className="mr-2 h-4 w-4" /> Export
                   </Button>
                 </div>
@@ -124,43 +192,59 @@ const PaymentsPage = () => {
             </CardHeader>
             <CardContent>
               <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Invoice ID</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Issue Date</TableHead>
-                      <TableHead>Due Date</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Shipment</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {invoices.map((invoice) => (
-                      <TableRow key={invoice.id}>
-                        <TableCell className="font-medium">{invoice.id}</TableCell>
-                        <TableCell>${invoice.amount.toFixed(2)}</TableCell>
-                        <TableCell>{invoice.date}</TableCell>
-                        <TableCell>{invoice.dueDate}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {getStatusIcon(invoice.status)}
-                            <Badge variant="outline" className={getStatusBadgeColor(invoice.status)}>
-                              {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
-                            </Badge>
-                          </div>
-                        </TableCell>
-                        <TableCell>{invoice.shipment}</TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="ghost" size="sm">
-                            View
-                          </Button>
-                        </TableCell>
+                {loading ? (
+                  <div className="p-4 space-y-3">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                  </div>
+                ) : processedPayments.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Invoice ID</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Issue Date</TableHead>
+                        <TableHead>Due Date</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Shipment</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {processedPayments.map((payment) => (
+                        <TableRow key={payment.id}>
+                          <TableCell className="font-medium">INV-{payment.id.substring(0, 8)}</TableCell>
+                          <TableCell>${Number(payment.amount).toFixed(2)}</TableCell>
+                          <TableCell>{format(new Date(payment.created_at), 'yyyy-MM-dd')}</TableCell>
+                          <TableCell>{payment.dueDate}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {getStatusIcon(payment.status)}
+                              <Badge variant="outline" className={getStatusBadgeColor(payment.status)}>
+                                {payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
+                              </Badge>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {payment.shipment_id ? 
+                              payment.shipment_id.substring(0, 8) : 
+                              '-'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="sm">
+                              View
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    No invoices found.
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

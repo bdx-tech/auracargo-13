@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Package, 
   Clock, 
@@ -14,16 +15,26 @@ import {
   Plus,
   ChevronRight
 } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 
-const OverviewPage = () => {
-  // Mock data for shipments
-  const recentShipments = [
-    { id: "SH-2023-001", origin: "New York, USA", destination: "London, UK", status: "in-transit", date: "2023-10-15" },
-    { id: "SH-2023-002", origin: "Berlin, Germany", destination: "Paris, France", status: "delivered", date: "2023-10-10" },
-    { id: "SH-2023-003", origin: "Tokyo, Japan", destination: "Seoul, South Korea", status: "pending", date: "2023-10-18" },
-    { id: "SH-2023-004", origin: "Sydney, Australia", destination: "Melbourne, Australia", status: "in-transit", date: "2023-10-14" }
-  ];
+interface OverviewPageProps {
+  loading: boolean;
+  data: {
+    shipments: any[];
+    documents: any[];
+    payments: any[];
+    notifications: any[];
+  };
+  setActiveTab: (tab: string) => void;
+}
 
+const OverviewPage: React.FC<OverviewPageProps> = ({ loading, data, setActiveTab }) => {
+  const { shipments, notifications } = data;
+  
+  const recentShipments = shipments.slice(0, 4);
+  const activeShipments = shipments.filter(ship => ship.status === 'in-transit').length;
+  const pendingApprovals = shipments.filter(ship => ship.status === 'pending').length;
+  
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case "delivered":
@@ -60,8 +71,14 @@ const OverviewPage = () => {
             <Package className="h-4 w-4 text-kargon-red" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">28</div>
-            <p className="text-xs text-gray-500 mt-1">+14% from last month</p>
+            {loading ? (
+              <Skeleton className="h-8 w-16" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{shipments.length}</div>
+                <p className="text-xs text-gray-500 mt-1">All your shipments</p>
+              </>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -70,8 +87,14 @@ const OverviewPage = () => {
             <Truck className="h-4 w-4 text-kargon-red" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
-            <p className="text-xs text-gray-500 mt-1">5 arriving today</p>
+            {loading ? (
+              <Skeleton className="h-8 w-16" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{activeShipments}</div>
+                <p className="text-xs text-gray-500 mt-1">Currently in transit</p>
+              </>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -80,8 +103,14 @@ const OverviewPage = () => {
             <Clock className="h-4 w-4 text-kargon-red" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3</div>
-            <p className="text-xs text-gray-500 mt-1">Require your attention</p>
+            {loading ? (
+              <Skeleton className="h-8 w-16" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{pendingApprovals}</div>
+                <p className="text-xs text-gray-500 mt-1">Require your attention</p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -90,47 +119,64 @@ const OverviewPage = () => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Recent Shipments</CardTitle>
-          <Button variant="ghost" size="sm" className="text-kargon-red">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-kargon-red"
+            onClick={() => setActiveTab("shipments")}
+          >
             View All <ChevronRight className="ml-1 h-4 w-4" />
           </Button>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Tracking ID</TableHead>
-                <TableHead>Origin</TableHead>
-                <TableHead>Destination</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recentShipments.map((shipment) => (
-                <TableRow key={shipment.id}>
-                  <TableCell className="font-medium">{shipment.id}</TableCell>
-                  <TableCell>{shipment.origin}</TableCell>
-                  <TableCell>{shipment.destination}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={getStatusBadgeColor(shipment.status)}>
-                      {shipment.status.charAt(0).toUpperCase() + shipment.status.slice(1)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{shipment.date}</TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="sm">
-                      Details
-                    </Button>
-                  </TableCell>
+          {loading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          ) : recentShipments.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tracking ID</TableHead>
+                  <TableHead>Origin</TableHead>
+                  <TableHead>Destination</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead></TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {recentShipments.map((shipment) => (
+                  <TableRow key={shipment.id}>
+                    <TableCell className="font-medium">{shipment.tracking_number}</TableCell>
+                    <TableCell>{shipment.origin}</TableCell>
+                    <TableCell>{shipment.destination}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={getStatusBadgeColor(shipment.status)}>
+                        {shipment.status.charAt(0).toUpperCase() + shipment.status.slice(1)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{new Date(shipment.created_at).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm">
+                        Details
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="text-center py-4 text-gray-500">
+              No shipments found. Create your first shipment to get started.
+            </div>
+          )}
         </CardContent>
       </Card>
       
-      {/* Quick Actions */}
+      {/* Quick Actions & Notifications */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
@@ -153,20 +199,28 @@ const OverviewPage = () => {
             <CardTitle>Notifications</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="border-b pb-4">
-                <p className="font-medium">Shipment SH-2023-001 is arriving today</p>
-                <p className="text-sm text-gray-500">2 hours ago</p>
+            {loading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
               </div>
-              <div className="border-b pb-4">
-                <p className="font-medium">New quote request submitted</p>
-                <p className="text-sm text-gray-500">Yesterday</p>
+            ) : notifications.length > 0 ? (
+              <div className="space-y-4">
+                {notifications.slice(0, 3).map((notification) => (
+                  <div key={notification.id} className="border-b pb-4">
+                    <p className="font-medium">{notification.title}</p>
+                    <p className="text-sm text-gray-500">
+                      {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                    </p>
+                  </div>
+                ))}
               </div>
-              <div>
-                <p className="font-medium">Your monthly report is ready</p>
-                <p className="text-sm text-gray-500">3 days ago</p>
+            ) : (
+              <div className="text-center py-4 text-gray-500">
+                No notifications at this time.
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>

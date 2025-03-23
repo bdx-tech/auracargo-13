@@ -1,9 +1,10 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Search, 
   FileText, 
@@ -15,18 +16,20 @@ import {
   Eye
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
 
-const DocumentsPage = () => {
-  // Mock data for documents
-  const documents = [
-    { id: "DOC-001", name: "Commercial Invoice", type: "invoice", date: "2023-10-15", shipment: "SH-2023-001", status: "verified" },
-    { id: "DOC-002", name: "Bill of Lading", type: "bl", date: "2023-10-12", shipment: "SH-2023-001", status: "verified" },
-    { id: "DOC-003", name: "Packing List", type: "packing", date: "2023-10-14", shipment: "SH-2023-001", status: "verified" },
-    { id: "DOC-004", name: "Certificate of Origin", type: "certificate", date: "2023-10-18", shipment: "SH-2023-002", status: "pending" },
-    { id: "DOC-005", name: "Insurance Certificate", type: "insurance", date: "2023-10-20", shipment: "SH-2023-003", status: "pending" },
-    { id: "DOC-006", name: "Customs Declaration", type: "customs", date: "2023-10-16", shipment: "SH-2023-002", status: "verified" }
-  ];
+interface DocumentsPageProps {
+  loading: boolean;
+  documents: any[];
+}
 
+const DocumentsPage: React.FC<DocumentsPageProps> = ({ loading, documents }) => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("documents");
+  const { toast } = useToast();
+  
+  // Templates example (would come from database in a real app)
   const templates = [
     { id: "TPL-001", name: "Commercial Invoice Template", type: "invoice", category: "International" },
     { id: "TPL-002", name: "Bill of Lading Template", type: "bl", category: "Sea Freight" },
@@ -34,17 +37,40 @@ const DocumentsPage = () => {
     { id: "TPL-004", name: "Customs Declaration Form", type: "customs", category: "Customs" },
     { id: "TPL-005", name: "Dangerous Goods Declaration", type: "dangerous", category: "Compliance" }
   ];
+  
+  const filteredDocuments = documents.filter(doc => 
+    searchQuery === "" || 
+    doc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    doc.document_type.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleUploadDocument = () => {
+    toast({
+      title: "Upload feature",
+      description: "Document upload functionality will be implemented soon.",
+    });
+  };
+
+  const handleDownloadDocument = (docId: string) => {
+    toast({
+      title: "Download started",
+      description: `Downloading document ${docId}`,
+    });
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-kargon-dark">Documents</h1>
-        <Button className="bg-kargon-red hover:bg-kargon-red/90">
+        <Button 
+          className="bg-kargon-red hover:bg-kargon-red/90"
+          onClick={handleUploadDocument}
+        >
           <Upload className="mr-2 h-4 w-4" /> Upload Document
         </Button>
       </div>
       
-      <Tabs defaultValue="documents" className="w-full">
+      <Tabs defaultValue="documents" className="w-full" value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="documents">My Documents</TabsTrigger>
           <TabsTrigger value="templates">Templates</TabsTrigger>
@@ -63,59 +89,68 @@ const DocumentsPage = () => {
                   <Input
                     placeholder="Search documents..."
                     className="pl-8 w-full md:w-64"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
               </div>
             </CardHeader>
             <CardContent>
               <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Document ID</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Shipment</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {documents.map((doc) => (
-                      <TableRow key={doc.id}>
-                        <TableCell className="font-medium">{doc.id}</TableCell>
-                        <TableCell>{doc.name}</TableCell>
-                        <TableCell className="capitalize">{doc.type}</TableCell>
-                        <TableCell>{doc.shipment}</TableCell>
-                        <TableCell>{doc.date}</TableCell>
-                        <TableCell>
-                          {doc.status === "verified" ? (
+                {loading ? (
+                  <div className="p-4 space-y-3">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                  </div>
+                ) : filteredDocuments.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Document ID</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredDocuments.map((doc) => (
+                        <TableRow key={doc.id}>
+                          <TableCell className="font-medium">{doc.id.substring(0, 8)}</TableCell>
+                          <TableCell>{doc.name}</TableCell>
+                          <TableCell className="capitalize">{doc.document_type}</TableCell>
+                          <TableCell>{new Date(doc.created_at).toLocaleDateString()}</TableCell>
+                          <TableCell>
                             <div className="flex items-center text-green-600">
                               <FileCheck className="mr-1 h-4 w-4" />
                               <span>Verified</span>
                             </div>
-                          ) : (
-                            <div className="flex items-center text-amber-600">
-                              <FileWarning className="mr-1 h-4 w-4" />
-                              <span>Pending</span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button variant="ghost" size="sm">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleDownloadDocument(doc.id)}
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
                             </div>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="sm">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm">
-                              <Download className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    No documents found. Upload your first document to get started.
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

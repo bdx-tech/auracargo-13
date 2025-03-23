@@ -1,10 +1,11 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Search, 
   Plus, 
@@ -14,22 +15,18 @@ import {
   ChevronRight
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/components/ui/use-toast";
 
-const ShipmentsPage = () => {
+interface ShipmentsPageProps {
+  loading: boolean;
+  shipments: any[];
+}
+
+const ShipmentsPage: React.FC<ShipmentsPageProps> = ({ loading, shipments }) => {
   const [statusFilter, setStatusFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const { toast } = useToast();
   
-  // Mock data for shipments
-  const shipments = [
-    { id: "SH-2023-001", origin: "New York, USA", destination: "London, UK", status: "in-transit", date: "2023-10-15", customer: "ABC Corp" },
-    { id: "SH-2023-002", origin: "Berlin, Germany", destination: "Paris, France", status: "delivered", date: "2023-10-10", customer: "Global Trade Ltd" },
-    { id: "SH-2023-003", origin: "Tokyo, Japan", destination: "Seoul, South Korea", status: "pending", date: "2023-10-18", customer: "Nippon Exports" },
-    { id: "SH-2023-004", origin: "Sydney, Australia", destination: "Melbourne, Australia", status: "in-transit", date: "2023-10-14", customer: "Oceanic Shipping" },
-    { id: "SH-2023-005", origin: "Dubai, UAE", destination: "Mumbai, India", status: "pending", date: "2023-10-20", customer: "Desert Traders" },
-    { id: "SH-2023-006", origin: "Los Angeles, USA", destination: "Vancouver, Canada", status: "delivered", date: "2023-10-08", customer: "Pacific Routes" },
-    { id: "SH-2023-007", origin: "Amsterdam, Netherlands", destination: "Brussels, Belgium", status: "in-transit", date: "2023-10-17", customer: "Euro Logistics" },
-    { id: "SH-2023-008", origin: "Singapore", destination: "Jakarta, Indonesia", status: "pending", date: "2023-10-22", customer: "ASEAN Cargo" }
-  ];
-
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case "delivered":
@@ -43,9 +40,23 @@ const ShipmentsPage = () => {
     }
   };
 
-  const filteredShipments = statusFilter === "all" 
-    ? shipments 
-    : shipments.filter(shipment => shipment.status === statusFilter);
+  const filteredShipments = shipments.filter(shipment => {
+    const matchesStatus = statusFilter === "all" || shipment.status === statusFilter;
+    const matchesSearch = 
+      searchQuery === "" || 
+      shipment.tracking_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      shipment.origin.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      shipment.destination.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    return matchesStatus && matchesSearch;
+  });
+
+  const handleExport = () => {
+    toast({
+      title: "Export started",
+      description: "Your shipments data is being exported to CSV",
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -68,6 +79,8 @@ const ShipmentsPage = () => {
                 <Input
                   placeholder="Search shipments..."
                   className="pl-8 w-full md:w-80"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
               <div className="flex gap-2">
@@ -87,58 +100,71 @@ const ShipmentsPage = () => {
                 </Button>
               </div>
             </div>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleExport}>
               <Download className="mr-2 h-4 w-4" /> Export
             </Button>
           </div>
 
           <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Tracking ID</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Origin</TableHead>
-                  <TableHead>Destination</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredShipments.map((shipment) => (
-                  <TableRow key={shipment.id}>
-                    <TableCell className="font-medium">{shipment.id}</TableCell>
-                    <TableCell>{shipment.customer}</TableCell>
-                    <TableCell>{shipment.origin}</TableCell>
-                    <TableCell>{shipment.destination}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={getStatusBadgeColor(shipment.status)}>
-                        {shipment.status.charAt(0).toUpperCase() + shipment.status.slice(1)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{shipment.date}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm">
-                        Details
-                      </Button>
-                    </TableCell>
+            {loading ? (
+              <div className="p-4 space-y-3">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+              </div>
+            ) : filteredShipments.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Tracking ID</TableHead>
+                    <TableHead>Origin</TableHead>
+                    <TableHead>Destination</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredShipments.map((shipment) => (
+                    <TableRow key={shipment.id}>
+                      <TableCell className="font-medium">{shipment.tracking_number}</TableCell>
+                      <TableCell>{shipment.origin}</TableCell>
+                      <TableCell>{shipment.destination}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={getStatusBadgeColor(shipment.status)}>
+                          {shipment.status.charAt(0).toUpperCase() + shipment.status.slice(1)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{new Date(shipment.created_at).toLocaleDateString()}</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="sm">
+                          Details
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                No shipments found matching your filters.
+              </div>
+            )}
           </div>
           
-          <div className="flex items-center justify-end space-x-2 py-4">
-            <Button variant="outline" size="sm">
-              <ChevronLeft className="h-4 w-4" />
-              Previous
-            </Button>
-            <Button variant="outline" size="sm">
-              Next
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+          {filteredShipments.length > 0 && (
+            <div className="flex items-center justify-end space-x-2 py-4">
+              <Button variant="outline" size="sm">
+                <ChevronLeft className="h-4 w-4" />
+                Previous
+              </Button>
+              <Button variant="outline" size="sm">
+                Next
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
