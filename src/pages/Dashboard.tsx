@@ -10,6 +10,7 @@ import SettingsPage from "./dashboard/Settings";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { createDummyData } from "@/utils/createDummyData";
+import { createDummyPayment } from "@/utils/createDummyPayment";
 import { useToast } from "@/components/ui/use-toast";
 
 const Dashboard = () => {
@@ -42,6 +43,8 @@ const Dashboard = () => {
         // If no shipments, create dummy data
         if (!shipments || shipments.length === 0) {
           await createDummyData(user.id);
+          // Also create a dummy payment for testing
+          await createDummyPayment(user.id);
           toast({
             title: "Welcome to Auracargo!",
             description: "We've created some sample data for you to explore the dashboard.",

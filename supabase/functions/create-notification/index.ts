@@ -1,83 +1,66 @@
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.1'
+// Follow this setup guide to integrate the Deno runtime into your application:
+// https://deno.land/manual/examples/deploy_node_server
+
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+};
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Get the authorization header from the request
-    const authorization = req.headers.get('Authorization')
-    if (!authorization) {
-      throw new Error('Missing Authorization header')
-    }
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: req.headers.get('Authorization')! },
+        },
+      }
+    );
 
-    // Extract JWT token from the Authorization header
-    const token = authorization.replace('Bearer ', '')
+    // Get request body
+    const { title, content, user_id } = await req.json();
 
-    // Create a Supabase client with the Admin key
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
-    // Verify the JWT token and get the user
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token)
-    if (userError || !user) {
-      throw new Error('Invalid token or user not found')
-    }
-
-    // Parse the request body
-    const { title, content } = await req.json()
-
-    if (!title || !content) {
-      throw new Error('Missing required fields: title and/or content')
-    }
-
-    // Create the notification in the database
-    const { data: notification, error: notificationError } = await supabase
+    // Create notification
+    const { data, error } = await supabaseClient
       .from('notifications')
-      .insert({
-        user_id: user.id,
-        title,
-        content,
-        is_read: false
-      })
+      .insert([{ title, content, user_id }])
       .select()
-      .single()
+      .single();
 
-    if (notificationError) {
-      throw notificationError
+    if (error) {
+      throw error;
     }
 
     return new Response(
-      JSON.stringify({ success: true, data: notification }),
+      JSON.stringify({ notification: data }),
       {
-        headers: {
-          ...corsHeaders,
+        headers: { 
           'Content-Type': 'application/json',
-        },
-        status: 200,
+          ...corsHeaders
+        }
       }
-    )
+    );
   } catch (error) {
-    console.error('Error:', error.message)
+    console.error('Error creating notification:', error);
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
-      {
-        headers: {
-          ...corsHeaders,
+      JSON.stringify({ error: error.message }),
+      { 
+        status: 400, 
+        headers: { 
           'Content-Type': 'application/json',
-        },
-        status: 400,
+          ...corsHeaders
+        } 
       }
-    )
+    );
   }
-})
+});
