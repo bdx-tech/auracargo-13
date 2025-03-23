@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { 
   Table, 
@@ -87,7 +86,7 @@ const ShipmentsManagement = () => {
       case "Processing": return "secondary";
       case "Delayed": return "destructive";
       case "Pending": return "outline";
-      case "Approved": return "success";
+      case "Approved": return "secondary";
       default: return "outline";
     }
   };
@@ -118,7 +117,6 @@ const ShipmentsManagement = () => {
         
       if (error) throw error;
       
-      // Create tracking event for approval
       await supabase
         .from('tracking_events')
         .insert({
@@ -128,7 +126,6 @@ const ShipmentsManagement = () => {
           location: 'Processing Center'
         });
       
-      // Create a notification for the user
       const { data: shipmentData } = await supabase
         .from('shipments')
         .select('user_id, tracking_number')
@@ -170,7 +167,6 @@ const ShipmentsManagement = () => {
         
       if (error) throw error;
       
-      // Create tracking event for rejection
       await supabase
         .from('tracking_events')
         .insert({
@@ -180,7 +176,6 @@ const ShipmentsManagement = () => {
           location: 'Processing Center'
         });
       
-      // Create a notification for the user
       const { data: shipmentData } = await supabase
         .from('shipments')
         .select('user_id, tracking_number')
