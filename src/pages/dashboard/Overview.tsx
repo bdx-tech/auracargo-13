@@ -1,10 +1,13 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   Package, 
   Clock, 
@@ -12,17 +15,146 @@ import {
   Search,
   FileText,
   Plus,
-  ChevronRight
+  ChevronRight,
+  RefreshCw
 } from "lucide-react";
 
-const OverviewPage = () => {
-  // Mock data for shipments
-  const recentShipments = [
-    { id: "SH-2023-001", origin: "New York, USA", destination: "London, UK", status: "in-transit", date: "2023-10-15" },
-    { id: "SH-2023-002", origin: "Berlin, Germany", destination: "Paris, France", status: "delivered", date: "2023-10-10" },
-    { id: "SH-2023-003", origin: "Tokyo, Japan", destination: "Seoul, South Korea", status: "pending", date: "2023-10-18" },
-    { id: "SH-2023-004", origin: "Sydney, Australia", destination: "Melbourne, Australia", status: "in-transit", date: "2023-10-14" }
-  ];
+interface OverviewPageProps {
+  userId: string | undefined;
+}
+
+const OverviewPage: React.FC<OverviewPageProps> = ({ userId }) => {
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalShipments: 0,
+    activeShipments: 0,
+    pendingApprovals: 0
+  });
+  const [recentShipments, setRecentShipments] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const { toast } = useToast();
+  
+  const fetchData = async () => {
+    if (!userId) return;
+    
+    setLoading(true);
+    try {
+      // Fetch total shipments count
+      const { count: totalCount, error: totalError } = await supabase
+        .from('shipments')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId);
+      
+      if (totalError) throw totalError;
+      
+      // Fetch active shipments count (not delivered or completed)
+      const { count: activeCount, error: activeError } = await supabase
+        .from('shipments')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .in('status', ['in-transit', 'pending']);
+      
+      if (activeError) throw activeError;
+      
+      // Fetch pending approvals count
+      const { count: pendingCount, error: pendingError } = await supabase
+        .from('shipments')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('status', 'pending');
+      
+      if (pendingError) throw pendingError;
+      
+      // Fetch recent shipments
+      const { data: shipments, error: shipmentsError } = await supabase
+        .from('shipments')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(4);
+      
+      if (shipmentsError) throw shipmentsError;
+      
+      // Fetch notifications (we'll create this table if it doesn't exist)
+      // For now, fetch recent shipment status changes as notifications
+      const { data: notifs, error: notifsError } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(3);
+      
+      if (notifsError && notifsError.code !== 'PGRST116') {
+        // PGRST116 means the table doesn't exist, which we'll handle
+        throw notifsError;
+      }
+      
+      setStats({
+        totalShipments: totalCount || 0,
+        activeShipments: activeCount || 0,
+        pendingApprovals: pendingCount || 0
+      });
+      
+      setRecentShipments(shipments || []);
+      setNotifications(notifs || []);
+      
+      // If notifications table doesn't exist, create it with some sample data
+      if (notifsError && notifsError.code === 'PGRST116') {
+        await setupNotificationsTable(userId);
+      }
+      
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      toast({
+        variant: "destructive",
+        title: "Error loading dashboard",
+        description: "Failed to load dashboard data. Please try again later."
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const setupNotificationsTable = async (userId: string) => {
+    try {
+      // We can't create tables from the client side directly with Supabase
+      // Instead, in a real app, you'd do this via a migration or supabase function
+      // For now, let's just create sample notification data for our UI
+      
+      const sampleNotifications = [
+        {
+          id: 1,
+          title: "Shipment update",
+          content: "Your shipment is arriving today",
+          created_at: new Date().toISOString(),
+          read: false
+        },
+        {
+          id: 2,
+          title: "Quote request",
+          content: "New quote request submitted",
+          created_at: new Date(Date.now() - 86400000).toISOString(), // Yesterday
+          read: true
+        },
+        {
+          id: 3,
+          title: "Report ready",
+          content: "Your monthly report is ready",
+          created_at: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
+          read: true
+        }
+      ];
+      
+      setNotifications(sampleNotifications);
+      
+    } catch (error) {
+      console.error('Error setting up notifications:', error);
+    }
+  };
+  
+  useEffect(() => {
+    fetchData();
+  }, [userId]);
 
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
@@ -60,8 +192,14 @@ const OverviewPage = () => {
             <Package className="h-4 w-4 text-kargon-red" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">28</div>
-            <p className="text-xs text-gray-500 mt-1">+14% from last month</p>
+            {loading ? (
+              <Skeleton className="h-8 w-16" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{stats.totalShipments}</div>
+                <p className="text-xs text-gray-500 mt-1">All shipments</p>
+              </>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -70,8 +208,14 @@ const OverviewPage = () => {
             <Truck className="h-4 w-4 text-kargon-red" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
-            <p className="text-xs text-gray-500 mt-1">5 arriving today</p>
+            {loading ? (
+              <Skeleton className="h-8 w-16" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{stats.activeShipments}</div>
+                <p className="text-xs text-gray-500 mt-1">In transit or pending</p>
+              </>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -80,8 +224,14 @@ const OverviewPage = () => {
             <Clock className="h-4 w-4 text-kargon-red" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3</div>
-            <p className="text-xs text-gray-500 mt-1">Require your attention</p>
+            {loading ? (
+              <Skeleton className="h-8 w-16" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{stats.pendingApprovals}</div>
+                <p className="text-xs text-gray-500 mt-1">Require your attention</p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -90,43 +240,66 @@ const OverviewPage = () => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Recent Shipments</CardTitle>
-          <Button variant="ghost" size="sm" className="text-kargon-red">
-            View All <ChevronRight className="ml-1 h-4 w-4" />
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="sm" onClick={fetchData}>
+              <RefreshCw className="mr-1 h-4 w-4" />
+              Refresh
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-kargon-red"
+              onClick={() => setActiveTab("shipments")}
+            >
+              View All <ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Tracking ID</TableHead>
-                <TableHead>Origin</TableHead>
-                <TableHead>Destination</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recentShipments.map((shipment) => (
-                <TableRow key={shipment.id}>
-                  <TableCell className="font-medium">{shipment.id}</TableCell>
-                  <TableCell>{shipment.origin}</TableCell>
-                  <TableCell>{shipment.destination}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={getStatusBadgeColor(shipment.status)}>
-                      {shipment.status.charAt(0).toUpperCase() + shipment.status.slice(1)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{shipment.date}</TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="sm">
-                      Details
-                    </Button>
-                  </TableCell>
+          {loading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          ) : recentShipments.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tracking ID</TableHead>
+                  <TableHead>Origin</TableHead>
+                  <TableHead>Destination</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead></TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {recentShipments.map((shipment) => (
+                  <TableRow key={shipment.id}>
+                    <TableCell className="font-medium">{shipment.tracking_number}</TableCell>
+                    <TableCell>{shipment.origin}</TableCell>
+                    <TableCell>{shipment.destination}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={getStatusBadgeColor(shipment.status)}>
+                        {shipment.status.charAt(0).toUpperCase() + shipment.status.slice(1)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{new Date(shipment.created_at).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm">
+                        Details
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              No shipments found. Create your first shipment to get started.
+            </div>
+          )}
         </CardContent>
       </Card>
       
@@ -153,20 +326,30 @@ const OverviewPage = () => {
             <CardTitle>Notifications</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="border-b pb-4">
-                <p className="font-medium">Shipment SH-2023-001 is arriving today</p>
-                <p className="text-sm text-gray-500">2 hours ago</p>
+            {loading ? (
+              <div className="space-y-4">
+                <Skeleton className="h-14 w-full" />
+                <Skeleton className="h-14 w-full" />
+                <Skeleton className="h-14 w-full" />
               </div>
-              <div className="border-b pb-4">
-                <p className="font-medium">New quote request submitted</p>
-                <p className="text-sm text-gray-500">Yesterday</p>
+            ) : notifications.length > 0 ? (
+              <div className="space-y-4">
+                {notifications.map((notification, index) => (
+                  <div key={index} className="border-b pb-4 last:border-b-0 last:pb-0">
+                    <p className="font-medium">{notification.title || notification.content}</p>
+                    <p className="text-sm text-gray-500">
+                      {notification.created_at 
+                        ? new Date(notification.created_at).toLocaleDateString()
+                        : 'Recent'}
+                    </p>
+                  </div>
+                ))}
               </div>
-              <div>
-                <p className="font-medium">Your monthly report is ready</p>
-                <p className="text-sm text-gray-500">3 days ago</p>
+            ) : (
+              <div className="text-center py-4 text-gray-500">
+                No notifications at this time.
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>

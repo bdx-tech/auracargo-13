@@ -1,9 +1,11 @@
-
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   CreditCard, 
   DollarSign, 
@@ -12,49 +14,121 @@ import {
   FileText,
   AlertCircle,
   CheckCircle2,
-  Clock
+  Clock,
+  RefreshCw
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const PaymentsPage = () => {
-  // Mock data for invoices
-  const invoices = [
-    { id: "INV-2023-001", amount: 1250.00, date: "2023-10-05", dueDate: "2023-11-05", status: "paid", shipment: "SH-2023-001" },
-    { id: "INV-2023-002", amount: 850.50, date: "2023-10-10", dueDate: "2023-11-10", status: "pending", shipment: "SH-2023-002" },
-    { id: "INV-2023-003", amount: 1750.00, date: "2023-10-15", dueDate: "2023-11-15", status: "overdue", shipment: "SH-2023-003" },
-    { id: "INV-2023-004", amount: 950.75, date: "2023-10-20", dueDate: "2023-11-20", status: "pending", shipment: "SH-2023-004" },
-    { id: "INV-2023-005", amount: 1500.00, date: "2023-09-25", dueDate: "2023-10-25", status: "paid", shipment: "SH-2023-005" }
-  ];
+interface PaymentsPageProps {
+  userId: string | undefined;
+}
 
-  // Mock data for payment methods
-  const paymentMethods = [
-    { id: "PM-001", type: "credit_card", last4: "4242", expiry: "05/25", default: true },
-    { id: "PM-002", type: "bank_account", accountNumber: "****6789", bankName: "Chase", default: false }
-  ];
+const PaymentsPage: React.FC<PaymentsPageProps> = ({ userId }) => {
+  const [invoices, setInvoices] = useState([]);
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [stats, setStats] = useState({
+    totalPaid: 0,
+    outstanding: 0,
+    nextDueDate: null,
+    nextDueAmount: 0,
+    nextDueInvoice: ""
+  });
+  const { toast } = useToast();
+  
+  const fetchPaymentData = async () => {
+    if (!userId) return;
+    
+    setLoading(true);
+    setError("");
+    
+    try {
+      const { data: paymentsData, error: paymentsError } = await supabase
+        .from('payments')
+        .select('*, shipments:shipment_id(tracking_number)')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      
+      if (paymentsError) {
+        if (paymentsError.code === 'PGRST116') {
+          setInvoices([]);
+        } else {
+          throw paymentsError;
+        }
+      } else {
+        setInvoices(paymentsData || []);
+        
+        if (paymentsData && paymentsData.length > 0) {
+          const paid = paymentsData
+            .filter(p => p.status === 'Completed' || p.status === 'paid')
+            .reduce((sum, p) => sum + Number(p.amount), 0);
+          
+          const pending = paymentsData
+            .filter(p => p.status === 'Pending' || p.status === 'pending' || p.status === 'overdue')
+            .reduce((sum, p) => sum + Number(p.amount), 0);
+          
+          const pendingInvoices = paymentsData
+            .filter(p => p.status === 'Pending' || p.status === 'pending')
+            .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+          
+          setStats({
+            totalPaid: paid,
+            outstanding: pending,
+            nextDueDate: pendingInvoices[0]?.due_date || null,
+            nextDueAmount: pendingInvoices[0]?.amount || 0,
+            nextDueInvoice: pendingInvoices[0]?.id || ""
+          });
+        }
+      }
+      
+      setPaymentMethods([
+        { id: "PM-001", type: "credit_card", last4: "4242", expiry: "05/25", default: true },
+        { id: "PM-002", type: "bank_account", accountNumber: "****6789", bankName: "Chase", default: false }
+      ]);
+      
+    } catch (error) {
+      console.error('Error fetching payment data:', error);
+      setError("Failed to fetch payment data. Please try again.");
+      toast({
+        variant: "destructive",
+        title: "Error loading payment data",
+        description: "There was a problem loading your payment information."
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  useEffect(() => {
+    fetchPaymentData();
+  }, [userId]);
 
   const getStatusBadgeColor = (status: string) => {
-    switch (status) {
-      case "paid":
-        return "bg-green-100 text-green-800 hover:bg-green-100";
-      case "pending":
-        return "bg-blue-100 text-blue-800 hover:bg-blue-100";
-      case "overdue":
-        return "bg-red-100 text-red-800 hover:bg-red-100";
-      default:
-        return "bg-gray-100 text-gray-800 hover:bg-gray-100";
+    const normalizedStatus = status.toLowerCase();
+    
+    if (normalizedStatus === "paid" || normalizedStatus === "completed") {
+      return "bg-green-100 text-green-800 hover:bg-green-100";
+    } else if (normalizedStatus === "pending") {
+      return "bg-blue-100 text-blue-800 hover:bg-blue-100";
+    } else if (normalizedStatus === "overdue") {
+      return "bg-red-100 text-red-800 hover:bg-red-100";
+    } else {
+      return "bg-gray-100 text-gray-800 hover:bg-gray-100";
     }
   };
 
   const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "paid":
-        return <CheckCircle2 className="h-4 w-4 text-green-600" />;
-      case "pending":
-        return <Clock className="h-4 w-4 text-blue-600" />;
-      case "overdue":
-        return <AlertCircle className="h-4 w-4 text-red-600" />;
-      default:
-        return null;
+    const normalizedStatus = status.toLowerCase();
+    
+    if (normalizedStatus === "paid" || normalizedStatus === "completed") {
+      return <CheckCircle2 className="h-4 w-4 text-green-600" />;
+    } else if (normalizedStatus === "pending") {
+      return <Clock className="h-4 w-4 text-blue-600" />;
+    } else if (normalizedStatus === "overdue") {
+      return <AlertCircle className="h-4 w-4 text-red-600" />;
+    } else {
+      return null;
     }
   };
 
@@ -62,12 +136,16 @@ const PaymentsPage = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-kargon-dark">Payments</h1>
-        <Button className="bg-kargon-red hover:bg-kargon-red/90">
-          <DollarSign className="mr-2 h-4 w-4" /> Make Payment
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={fetchPaymentData}>
+            <RefreshCw className="mr-2 h-4 w-4" /> Refresh
+          </Button>
+          <Button className="bg-kargon-red hover:bg-kargon-red/90">
+            <DollarSign className="mr-2 h-4 w-4" /> Make Payment
+          </Button>
+        </div>
       </div>
       
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -75,8 +153,14 @@ const PaymentsPage = () => {
             <DollarSign className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$2,750.00</div>
-            <p className="text-xs text-gray-500 mt-1">Last 30 days</p>
+            {loading ? (
+              <Skeleton className="h-8 w-32" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">${stats.totalPaid.toFixed(2)}</div>
+                <p className="text-xs text-gray-500 mt-1">All time</p>
+              </>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -85,8 +169,20 @@ const PaymentsPage = () => {
             <AlertCircle className="h-4 w-4 text-amber-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$2,601.25</div>
-            <p className="text-xs text-gray-500 mt-1">Across 3 invoices</p>
+            {loading ? (
+              <Skeleton className="h-8 w-32" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">${stats.outstanding.toFixed(2)}</div>
+                <p className="text-xs text-gray-500 mt-1">
+                  {invoices.filter(inv => 
+                    inv.status === 'Pending' || 
+                    inv.status === 'pending' || 
+                    inv.status === 'overdue'
+                  ).length} invoice(s)
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -95,8 +191,23 @@ const PaymentsPage = () => {
             <Clock className="h-4 w-4 text-kargon-red" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Oct 25, 2023</div>
-            <p className="text-xs text-gray-500 mt-1">INV-2023-002 ($850.50)</p>
+            {loading ? (
+              <Skeleton className="h-8 w-32" />
+            ) : stats.nextDueDate ? (
+              <>
+                <div className="text-2xl font-bold">
+                  {new Date(stats.nextDueDate).toLocaleDateString()}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  {stats.nextDueInvoice} (${stats.nextDueAmount.toFixed(2)})
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">No pending payments</div>
+                <p className="text-xs text-gray-500 mt-1">You're all caught up!</p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -123,6 +234,13 @@ const PaymentsPage = () => {
               </div>
             </CardHeader>
             <CardContent>
+              {error ? (
+                <div className="flex items-center gap-2 text-red-500 mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <p>{error}</p>
+                </div>
+              ) : null}
+              
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
@@ -137,28 +255,48 @@ const PaymentsPage = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {invoices.map((invoice) => (
-                      <TableRow key={invoice.id}>
-                        <TableCell className="font-medium">{invoice.id}</TableCell>
-                        <TableCell>${invoice.amount.toFixed(2)}</TableCell>
-                        <TableCell>{invoice.date}</TableCell>
-                        <TableCell>{invoice.dueDate}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {getStatusIcon(invoice.status)}
-                            <Badge variant="outline" className={getStatusBadgeColor(invoice.status)}>
-                              {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
-                            </Badge>
-                          </div>
-                        </TableCell>
-                        <TableCell>{invoice.shipment}</TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="ghost" size="sm">
-                            View
-                          </Button>
+                    {loading ? (
+                      Array(4).fill(0).map((_, index) => (
+                        <TableRow key={index}>
+                          <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                          <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                          <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                          <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                          <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                          <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                          <TableCell className="text-right"><Skeleton className="h-8 w-16 ml-auto" /></TableCell>
+                        </TableRow>
+                      ))
+                    ) : invoices.length > 0 ? (
+                      invoices.map((invoice) => (
+                        <TableRow key={invoice.id}>
+                          <TableCell className="font-medium">{invoice.id}</TableCell>
+                          <TableCell>${Number(invoice.amount).toFixed(2)}</TableCell>
+                          <TableCell>{new Date(invoice.created_at).toLocaleDateString()}</TableCell>
+                          <TableCell>{invoice.due_date ? new Date(invoice.due_date).toLocaleDateString() : 'N/A'}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {getStatusIcon(invoice.status)}
+                              <Badge variant="outline" className={getStatusBadgeColor(invoice.status)}>
+                                {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                              </Badge>
+                            </div>
+                          </TableCell>
+                          <TableCell>{invoice.shipments?.tracking_number || 'N/A'}</TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="sm">
+                              View
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                          No invoices found. Payments will appear here when you create shipments.
                         </TableCell>
                       </TableRow>
-                    ))}
+                    )}
                   </TableBody>
                 </Table>
               </div>

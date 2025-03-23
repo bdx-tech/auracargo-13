@@ -1,34 +1,105 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   Search, 
   Plus, 
   Filter,
   Download,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  RefreshCw,
+  AlertCircle
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const ShipmentsPage = () => {
+interface ShipmentsPageProps {
+  userId: string | undefined;
+}
+
+const ShipmentsPage: React.FC<ShipmentsPageProps> = ({ userId }) => {
   const [statusFilter, setStatusFilter] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [shipments, setShipments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const pageSize = 8;
+  const { toast } = useToast();
+
+  const fetchShipments = async () => {
+    if (!userId) return;
+    
+    setLoading(true);
+    setError("");
+    
+    try {
+      let query = supabase
+        .from('shipments')
+        .select('*', { count: 'exact' })
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      
+      // Apply status filter if not "all"
+      if (statusFilter !== "all") {
+        query = query.eq('status', statusFilter);
+      }
+      
+      // Apply search filter if present
+      if (searchTerm) {
+        query = query.or(`tracking_number.ilike.%${searchTerm}%,origin.ilike.%${searchTerm}%,destination.ilike.%${searchTerm}%`);
+      }
+      
+      // Apply pagination
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+      
+      const { data, error, count } = await query.range(from, to);
+      
+      if (error) throw error;
+      
+      setShipments(data || []);
+      
+      // Calculate total pages
+      if (count !== null) {
+        setTotalPages(Math.ceil(count / pageSize));
+      }
+      
+    } catch (error) {
+      console.error('Error fetching shipments:', error);
+      setError("Failed to fetch shipments. Please try again.");
+      toast({
+        variant: "destructive",
+        title: "Error loading shipments",
+        description: "There was a problem loading your shipments."
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
   
-  // Mock data for shipments
-  const shipments = [
-    { id: "SH-2023-001", origin: "New York, USA", destination: "London, UK", status: "in-transit", date: "2023-10-15", customer: "ABC Corp" },
-    { id: "SH-2023-002", origin: "Berlin, Germany", destination: "Paris, France", status: "delivered", date: "2023-10-10", customer: "Global Trade Ltd" },
-    { id: "SH-2023-003", origin: "Tokyo, Japan", destination: "Seoul, South Korea", status: "pending", date: "2023-10-18", customer: "Nippon Exports" },
-    { id: "SH-2023-004", origin: "Sydney, Australia", destination: "Melbourne, Australia", status: "in-transit", date: "2023-10-14", customer: "Oceanic Shipping" },
-    { id: "SH-2023-005", origin: "Dubai, UAE", destination: "Mumbai, India", status: "pending", date: "2023-10-20", customer: "Desert Traders" },
-    { id: "SH-2023-006", origin: "Los Angeles, USA", destination: "Vancouver, Canada", status: "delivered", date: "2023-10-08", customer: "Pacific Routes" },
-    { id: "SH-2023-007", origin: "Amsterdam, Netherlands", destination: "Brussels, Belgium", status: "in-transit", date: "2023-10-17", customer: "Euro Logistics" },
-    { id: "SH-2023-008", origin: "Singapore", destination: "Jakarta, Indonesia", status: "pending", date: "2023-10-22", customer: "ASEAN Cargo" }
-  ];
+  useEffect(() => {
+    fetchShipments();
+  }, [userId, statusFilter, page]);
+  
+  const handleSearch = () => {
+    setPage(1); // Reset to first page when searching
+    fetchShipments();
+  };
+  
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
 
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
@@ -38,14 +109,12 @@ const ShipmentsPage = () => {
         return "bg-blue-100 text-blue-800 hover:bg-blue-100";
       case "pending":
         return "bg-yellow-100 text-yellow-800 hover:bg-yellow-100";
+      case "delayed":
+        return "bg-red-100 text-red-800 hover:bg-red-100";
       default:
         return "bg-gray-100 text-gray-800 hover:bg-gray-100";
     }
   };
-
-  const filteredShipments = statusFilter === "all" 
-    ? shipments 
-    : shipments.filter(shipment => shipment.status === statusFilter);
 
   return (
     <div className="space-y-6">
@@ -68,6 +137,9 @@ const ShipmentsPage = () => {
                 <Input
                   placeholder="Search shipments..."
                   className="pl-8 w-full md:w-80"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyPress={handleKeyPress}
                 />
               </div>
               <div className="flex gap-2">
@@ -80,10 +152,14 @@ const ShipmentsPage = () => {
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="in-transit">In Transit</SelectItem>
                     <SelectItem value="delivered">Delivered</SelectItem>
+                    <SelectItem value="delayed">Delayed</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button variant="outline" size="icon">
+                <Button variant="outline" size="icon" onClick={handleSearch}>
                   <Filter className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={fetchShipments}>
+                  <RefreshCw className="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -92,12 +168,18 @@ const ShipmentsPage = () => {
             </Button>
           </div>
 
+          {error ? (
+            <div className="flex items-center gap-2 text-red-500 mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <p>{error}</p>
+            </div>
+          ) : null}
+
           <div className="rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Tracking ID</TableHead>
-                  <TableHead>Customer</TableHead>
                   <TableHead>Origin</TableHead>
                   <TableHead>Destination</TableHead>
                   <TableHead>Status</TableHead>
@@ -106,39 +188,72 @@ const ShipmentsPage = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredShipments.map((shipment) => (
-                  <TableRow key={shipment.id}>
-                    <TableCell className="font-medium">{shipment.id}</TableCell>
-                    <TableCell>{shipment.customer}</TableCell>
-                    <TableCell>{shipment.origin}</TableCell>
-                    <TableCell>{shipment.destination}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={getStatusBadgeColor(shipment.status)}>
-                        {shipment.status.charAt(0).toUpperCase() + shipment.status.slice(1)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{shipment.date}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm">
-                        Details
-                      </Button>
+                {loading ? (
+                  Array(4).fill(0).map((_, index) => (
+                    <TableRow key={index}>
+                      <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="h-8 w-16 ml-auto" /></TableCell>
+                    </TableRow>
+                  ))
+                ) : shipments.length > 0 ? (
+                  shipments.map((shipment) => (
+                    <TableRow key={shipment.id}>
+                      <TableCell className="font-medium">{shipment.tracking_number}</TableCell>
+                      <TableCell>{shipment.origin}</TableCell>
+                      <TableCell>{shipment.destination}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={getStatusBadgeColor(shipment.status)}>
+                          {shipment.status.charAt(0).toUpperCase() + shipment.status.slice(1)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{new Date(shipment.created_at).toLocaleDateString()}</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="sm">
+                          Details
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                      No shipments found. Adjust your filters or create a new shipment.
                     </TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </div>
           
-          <div className="flex items-center justify-end space-x-2 py-4">
-            <Button variant="outline" size="sm">
-              <ChevronLeft className="h-4 w-4" />
-              Previous
-            </Button>
-            <Button variant="outline" size="sm">
-              Next
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-end space-x-2 py-4">
+              <Button 
+                variant="outline" 
+                size="sm"
+                disabled={page === 1}
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Previous
+              </Button>
+              <span className="text-sm text-gray-500">
+                Page {page} of {totalPages}
+              </span>
+              <Button 
+                variant="outline" 
+                size="sm"
+                disabled={page === totalPages}
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
