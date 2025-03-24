@@ -102,6 +102,10 @@ export type Database = {
           currency: string
           id: string
           payment_method: string
+          payment_provider:
+            | Database["public"]["Enums"]["payment_provider"]
+            | null
+          payment_reference: string | null
           shipment_id: string | null
           status: string
           transaction_id: string | null
@@ -114,6 +118,10 @@ export type Database = {
           currency?: string
           id?: string
           payment_method: string
+          payment_provider?:
+            | Database["public"]["Enums"]["payment_provider"]
+            | null
+          payment_reference?: string | null
           shipment_id?: string | null
           status?: string
           transaction_id?: string | null
@@ -126,6 +134,10 @@ export type Database = {
           currency?: string
           id?: string
           payment_method?: string
+          payment_provider?:
+            | Database["public"]["Enums"]["payment_provider"]
+            | null
+          payment_reference?: string | null
           shipment_id?: string | null
           status?: string
           transaction_id?: string | null
@@ -281,6 +293,7 @@ export type Database = {
       }
     }
     Enums: {
+      payment_provider: "paystack" | "other"
       user_role: "admin" | "staff" | "customer"
     }
     CompositeTypes: {

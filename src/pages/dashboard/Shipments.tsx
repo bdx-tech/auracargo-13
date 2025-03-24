@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,6 +15,7 @@ import {
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
+import { Link } from "react-router-dom";
 
 interface ShipmentsPageProps {
   loading: boolean;
@@ -62,9 +62,11 @@ const ShipmentsPage: React.FC<ShipmentsPageProps> = ({ loading, shipments }) => 
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-kargon-dark">Manage Shipments</h1>
-        <Button className="bg-kargon-red hover:bg-kargon-red/90">
-          <Plus className="mr-2 h-4 w-4" /> New Shipment
-        </Button>
+        <Link to="/create-shipment">
+          <Button className="bg-kargon-red hover:bg-kargon-red/90">
+            <Plus className="mr-2 h-4 w-4" /> New Shipment
+          </Button>
+        </Link>
       </div>
       
       <Card>
