@@ -25,6 +25,8 @@ serve(async (req) => {
       throw new Error('Payment reference is required');
     }
 
+    console.log('Verifying payment with reference:', reference);
+
     // Verify payment with Paystack
     const verifyResponse = await fetch(
       `https://api.paystack.co/transaction/verify/${reference}`,
@@ -42,6 +44,23 @@ serve(async (req) => {
 
     if (!verifyResponse.ok) {
       throw new Error(`Failed to verify payment: ${verifyData.message}`);
+    }
+
+    // Enhanced logging with more payment details
+    if (verifyData.status && verifyData.data) {
+      console.log('Payment details:', {
+        amount: verifyData.data.amount / 100, // Convert from kobo to naira
+        currency: verifyData.data.currency,
+        transaction_date: verifyData.data.transaction_date,
+        status: verifyData.data.status,
+        reference: verifyData.data.reference,
+        authorization: {
+          authorization_code: verifyData.data.authorization?.authorization_code,
+          card_type: verifyData.data.authorization?.card_type,
+          bank: verifyData.data.authorization?.bank,
+          last4: verifyData.data.authorization?.last4,
+        }
+      });
     }
 
     return new Response(

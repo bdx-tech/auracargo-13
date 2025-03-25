@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import DashboardSidebar from "@/components/DashboardSidebar";
@@ -9,8 +8,6 @@ import PaymentsPage from "./dashboard/Payments";
 import SettingsPage from "./dashboard/Settings";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { createDummyData } from "@/utils/createDummyData";
-import { createDummyPayment } from "@/utils/createDummyPayment";
 import { useToast } from "@/components/ui/use-toast";
 
 const Dashboard = () => {
@@ -32,32 +29,13 @@ const Dashboard = () => {
       setLoading(true);
       
       try {
-        // Check if user has data, if not create dummy data
+        // Fetch shipments
         const { data: shipments, error: shipmentsError } = await supabase
           .from('shipments')
           .select('*')
           .eq('user_id', user.id);
           
         if (shipmentsError) throw shipmentsError;
-        
-        // If no shipments, create dummy data
-        if (!shipments || shipments.length === 0) {
-          await createDummyData(user.id);
-          // Also create a dummy payment for testing
-          await createDummyPayment(user.id);
-          toast({
-            title: "Welcome to Auracargo!",
-            description: "We've created some sample data for you to explore the dashboard.",
-          });
-        }
-        
-        // Fetch updated shipments
-        const { data: updatedShipments, error: updatedShipmentsError } = await supabase
-          .from('shipments')
-          .select('*')
-          .eq('user_id', user.id);
-          
-        if (updatedShipmentsError) throw updatedShipmentsError;
         
         // Fetch documents
         const { data: documents, error: documentsError } = await supabase
@@ -85,7 +63,7 @@ const Dashboard = () => {
         if (notificationsError) throw notificationsError;
         
         setDashboardData({
-          shipments: updatedShipments || [],
+          shipments: shipments || [],
           documents: documents || [],
           payments: payments || [],
           notifications: notifications || []

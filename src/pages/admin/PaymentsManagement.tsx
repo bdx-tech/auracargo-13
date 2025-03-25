@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { 
   Table, 
@@ -17,7 +16,8 @@ import {
   CreditCard, 
   Download, 
   Eye,
-  BarChart
+  BarChart,
+  ExternalLink
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +29,9 @@ interface Payment {
   payment_method: string;
   created_at: string;
   transaction_id: string | null;
+  payment_reference: string | null;
+  payment_provider: string | null;
+  currency: string;
   profiles: {
     email: string;
     first_name: string | null;
@@ -57,6 +60,9 @@ const PaymentsManagement = () => {
             payment_method,
             created_at,
             transaction_id,
+            payment_reference,
+            payment_provider,
+            currency,
             profiles:user_id (
               email,
               first_name,
@@ -81,15 +87,23 @@ const PaymentsManagement = () => {
   
   const filteredPayments = payments.filter(payment => 
     payment.transaction_id?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    payment.payment_reference?.toLowerCase().includes(searchTerm.toLowerCase()) || 
     (payment.profiles?.email && payment.profiles.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const getStatusVariant = (status: string) => {
     switch (status) {
-      case "Completed": return "default";
-      case "Pending": return "secondary";
-      case "Failed": return "destructive";
-      default: return "outline";
+      case "paid":
+      case "Completed":
+        return "default";
+      case "pending":
+      case "Pending":
+        return "secondary";
+      case "failed":
+      case "Failed":
+        return "destructive";
+      default:
+        return "outline";
     }
   };
 
@@ -106,22 +120,43 @@ const PaymentsManagement = () => {
     return payment.profiles.email;
   };
 
-  // Calculate summary statistics
+  const formatCurrency = (amount: number, currency: string = "USD") => {
+    return currency === "NGN" ? 
+      `₦${amount.toLocaleString()}` : 
+      `$${amount.toFixed(2)}`;
+  };
+
+  const getPaymentProviderLink = (payment: Payment) => {
+    if (payment.payment_provider === 'paystack' && payment.payment_reference) {
+      return `https://dashboard.paystack.com/#/transactions/${payment.payment_reference}`;
+    }
+    return null;
+  };
+
   const totalRevenue = payments.reduce((sum, payment) => 
-    payment.status === "Completed" ? sum + Number(payment.amount) : sum, 0
+    payment.status.toLowerCase() === "paid" || payment.status.toLowerCase() === "completed" 
+      ? sum + Number(payment.amount) : sum, 0
   );
   
   const pendingRevenue = payments.reduce((sum, payment) => 
-    payment.status === "Pending" ? sum + Number(payment.amount) : sum, 0
+    payment.status.toLowerCase() === "pending" ? sum + Number(payment.amount) : sum, 0
   );
   
   const failedRevenue = payments.reduce((sum, payment) => 
-    payment.status === "Failed" ? sum + Number(payment.amount) : sum, 0
+    payment.status.toLowerCase() === "failed" ? sum + Number(payment.amount) : sum, 0
   );
   
-  const completedCount = payments.filter(payment => payment.status === "Completed").length;
-  const pendingCount = payments.filter(payment => payment.status === "Pending").length;
-  const failedCount = payments.filter(payment => payment.status === "Failed").length;
+  const completedCount = payments.filter(
+    payment => payment.status.toLowerCase() === "paid" || payment.status.toLowerCase() === "completed"
+  ).length;
+  
+  const pendingCount = payments.filter(
+    payment => payment.status.toLowerCase() === "pending"
+  ).length;
+  
+  const failedCount = payments.filter(
+    payment => payment.status.toLowerCase() === "failed"
+  ).length;
 
   return (
     <div className="space-y-6">
@@ -219,6 +254,7 @@ const PaymentsManagement = () => {
                 <TableHead>Method</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Reference</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -228,7 +264,7 @@ const PaymentsManagement = () => {
                   <TableRow key={payment.id}>
                     <TableCell className="font-medium">{payment.transaction_id || payment.id.slice(0, 8)}</TableCell>
                     <TableCell>{getCustomerName(payment)}</TableCell>
-                    <TableCell>${Number(payment.amount).toFixed(2)}</TableCell>
+                    <TableCell>{formatCurrency(Number(payment.amount), payment.currency)}</TableCell>
                     <TableCell>{payment.payment_method}</TableCell>
                     <TableCell>{new Date(payment.created_at).toLocaleDateString()}</TableCell>
                     <TableCell>
@@ -236,11 +272,23 @@ const PaymentsManagement = () => {
                         {payment.status}
                       </Badge>
                     </TableCell>
+                    <TableCell>{payment.payment_reference || '-'}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button variant="ghost" size="icon">
                           <Eye className="h-4 w-4" />
                         </Button>
+                        {getPaymentProviderLink(payment) && (
+                          <a 
+                            href={getPaymentProviderLink(payment)!} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                          >
+                            <Button variant="ghost" size="icon">
+                              <ExternalLink className="h-4 w-4" />
+                            </Button>
+                          </a>
+                        )}
                         <Button variant="ghost" size="icon">
                           <Download className="h-4 w-4" />
                         </Button>
@@ -250,7 +298,7 @@ const PaymentsManagement = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center">
+                  <TableCell colSpan={8} className="text-center">
                     No payments found
                   </TableCell>
                 </TableRow>

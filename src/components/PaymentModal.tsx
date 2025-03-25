@@ -51,11 +51,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     setLoading(true);
     
     try {
-      // In a real app, you would integrate with a payment processor here
-      // For our dummy implementation, we'll just update the database
-      
-      // Generate mock transaction ID
+      // Generate mock transaction ID and payment reference
       const transactionId = `TXN${Math.floor(100000000 + Math.random() * 900000000)}`;
+      const paymentReference = `REF${Math.floor(100000000 + Math.random() * 900000000)}`;
       
       // Update payment status in database
       const { error } = await supabase
@@ -64,6 +62,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           status: 'paid',
           payment_method: paymentMethod,
           transaction_id: transactionId,
+          payment_reference: paymentReference,
+          payment_provider: 'other',
           updated_at: new Date().toISOString()
         })
         .eq('id', invoice.id);
