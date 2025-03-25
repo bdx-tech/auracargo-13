@@ -17,8 +17,7 @@ import {
   CreditCard, 
   Download, 
   Eye,
-  BarChart,
-  ExternalLink
+  BarChart
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,9 +29,6 @@ interface Payment {
   payment_method: string;
   created_at: string;
   transaction_id: string | null;
-  payment_reference: string | null;
-  payment_provider: string | null;
-  currency: string;
   profiles: {
     email: string;
     first_name: string | null;
@@ -61,9 +57,6 @@ const PaymentsManagement = () => {
             payment_method,
             created_at,
             transaction_id,
-            payment_reference,
-            payment_provider,
-            currency,
             profiles:user_id (
               email,
               first_name,
@@ -92,12 +85,10 @@ const PaymentsManagement = () => {
   );
 
   const getStatusVariant = (status: string) => {
-    status = status.toLowerCase();
     switch (status) {
-      case "completed":
-      case "paid": return "default";
-      case "pending": return "secondary";
-      case "failed": return "destructive";
+      case "Completed": return "default";
+      case "Pending": return "secondary";
+      case "Failed": return "destructive";
       default: return "outline";
     }
   };
@@ -117,43 +108,20 @@ const PaymentsManagement = () => {
 
   // Calculate summary statistics
   const totalRevenue = payments.reduce((sum, payment) => 
-    payment.status.toLowerCase() === "completed" || payment.status.toLowerCase() === "paid" 
-      ? sum + Number(payment.amount) : sum, 0
+    payment.status === "Completed" ? sum + Number(payment.amount) : sum, 0
   );
   
   const pendingRevenue = payments.reduce((sum, payment) => 
-    payment.status.toLowerCase() === "pending" ? sum + Number(payment.amount) : sum, 0
+    payment.status === "Pending" ? sum + Number(payment.amount) : sum, 0
   );
   
   const failedRevenue = payments.reduce((sum, payment) => 
-    payment.status.toLowerCase() === "failed" ? sum + Number(payment.amount) : sum, 0
+    payment.status === "Failed" ? sum + Number(payment.amount) : sum, 0
   );
   
-  const completedCount = payments.filter(
-    payment => payment.status.toLowerCase() === "completed" || payment.status.toLowerCase() === "paid"
-  ).length;
-  
-  const pendingCount = payments.filter(
-    payment => payment.status.toLowerCase() === "pending"
-  ).length;
-  
-  const failedCount = payments.filter(
-    payment => payment.status.toLowerCase() === "failed"
-  ).length;
-  
-  const formatCurrency = (amount: number, currency: string = "USD") => {
-    if (currency === "NGN") {
-      return `₦${Number(amount).toFixed(2)}`;
-    }
-    return `$${Number(amount).toFixed(2)}`;
-  };
-  
-  const getPaymentProviderUrl = (payment: Payment) => {
-    if (payment.payment_provider === 'paystack' && payment.payment_reference) {
-      return `https://dashboard.paystack.com/#/transactions/${payment.payment_reference}`;
-    }
-    return null;
-  };
+  const completedCount = payments.filter(payment => payment.status === "Completed").length;
+  const pendingCount = payments.filter(payment => payment.status === "Pending").length;
+  const failedCount = payments.filter(payment => payment.status === "Failed").length;
 
   return (
     <div className="space-y-6">
@@ -249,7 +217,6 @@ const PaymentsManagement = () => {
                 <TableHead>Customer</TableHead>
                 <TableHead>Amount</TableHead>
                 <TableHead>Method</TableHead>
-                <TableHead>Provider</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -261,15 +228,8 @@ const PaymentsManagement = () => {
                   <TableRow key={payment.id}>
                     <TableCell className="font-medium">{payment.transaction_id || payment.id.slice(0, 8)}</TableCell>
                     <TableCell>{getCustomerName(payment)}</TableCell>
-                    <TableCell>{formatCurrency(Number(payment.amount), payment.currency)}</TableCell>
+                    <TableCell>${Number(payment.amount).toFixed(2)}</TableCell>
                     <TableCell>{payment.payment_method}</TableCell>
-                    <TableCell>
-                      {payment.payment_provider ? (
-                        <Badge variant="outline" className="capitalize">
-                          {payment.payment_provider}
-                        </Badge>
-                      ) : '-'}
-                    </TableCell>
                     <TableCell>{new Date(payment.created_at).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <Badge variant={getStatusVariant(payment.status)}>
@@ -281,20 +241,16 @@ const PaymentsManagement = () => {
                         <Button variant="ghost" size="icon">
                           <Eye className="h-4 w-4" />
                         </Button>
-                        {getPaymentProviderUrl(payment) && (
-                          <a href={getPaymentProviderUrl(payment)!} target="_blank" rel="noopener noreferrer">
-                            <Button variant="ghost" size="icon">
-                              <ExternalLink className="h-4 w-4" />
-                            </Button>
-                          </a>
-                        )}
+                        <Button variant="ghost" size="icon">
+                          <Download className="h-4 w-4" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center">
+                  <TableCell colSpan={7} className="text-center">
                     No payments found
                   </TableCell>
                 </TableRow>

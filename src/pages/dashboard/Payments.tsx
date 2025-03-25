@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,14 +13,11 @@ import {
   FileText,
   AlertCircle,
   CheckCircle2,
-  Clock,
-  ExternalLink
+  Clock
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, addDays } from 'date-fns';
 import { useToast } from "@/components/ui/use-toast";
-import PaymentModal from "@/components/PaymentModal";
-import { Link } from "react-router-dom";
 
 interface PaymentsPageProps {
   loading: boolean;
@@ -29,8 +27,6 @@ interface PaymentsPageProps {
 const PaymentsPage: React.FC<PaymentsPageProps> = ({ loading, payments }) => {
   const [activeTab, setActiveTab] = useState("invoices");
   const { toast } = useToast();
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   
   // Pre-process payments to add due dates (30 days from creation)
   const processedPayments = payments.map(payment => ({
@@ -40,16 +36,16 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ loading, payments }) => {
   
   // Calculate totals
   const totalPaid = processedPayments
-    .filter(payment => payment.status === 'Completed' || payment.status === 'paid')
+    .filter(payment => payment.status === 'paid')
     .reduce((sum, payment) => sum + Number(payment.amount), 0);
     
   const totalOutstanding = processedPayments
-    .filter(payment => payment.status !== 'Completed' && payment.status !== 'paid')
+    .filter(payment => payment.status !== 'paid')
     .reduce((sum, payment) => sum + Number(payment.amount), 0);
   
   // Find next payment due
   const nextPaymentDue = processedPayments
-    .filter(payment => payment.status === 'pending' || payment.status === 'Pending')
+    .filter(payment => payment.status === 'pending')
     .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0];
   
   // Mock data for payment methods
@@ -59,15 +55,12 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ loading, payments }) => {
   ];
 
   const getStatusBadgeColor = (status: string) => {
-    status = status.toLowerCase();
     switch (status) {
       case "paid":
-      case "completed":
         return "bg-green-100 text-green-800 hover:bg-green-100";
       case "pending":
         return "bg-blue-100 text-blue-800 hover:bg-blue-100";
       case "overdue":
-      case "failed":
         return "bg-red-100 text-red-800 hover:bg-red-100";
       default:
         return "bg-gray-100 text-gray-800 hover:bg-gray-100";
@@ -75,15 +68,12 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ loading, payments }) => {
   };
 
   const getStatusIcon = (status: string) => {
-    status = status.toLowerCase();
     switch (status) {
       case "paid":
-      case "completed":
         return <CheckCircle2 className="h-4 w-4 text-green-600" />;
       case "pending":
         return <Clock className="h-4 w-4 text-blue-600" />;
       case "overdue":
-      case "failed":
         return <AlertCircle className="h-4 w-4 text-red-600" />;
       default:
         return null;
@@ -103,36 +93,17 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ loading, payments }) => {
       description: "Your payments data is being exported",
     });
   };
-  
-  const openPaymentModal = (invoice: any) => {
-    setSelectedInvoice(invoice);
-    setIsPaymentModalOpen(true);
-  };
-  
-  const formatCurrency = (amount: number, currency: string = "USD") => {
-    if (currency === "NGN") {
-      return `₦${Number(amount).toFixed(2)}`;
-    }
-    return `$${Number(amount).toFixed(2)}`;
-  };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-kargon-dark">Payments</h1>
-        <div className="flex gap-2">
-          <Button 
-            className="bg-kargon-red hover:bg-kargon-red/90"
-            onClick={handleMakePayment}
-          >
-            <DollarSign className="mr-2 h-4 w-4" /> Make Payment
-          </Button>
-          <Link to="/create-shipment">
-            <Button variant="outline">
-              <Plus className="mr-2 h-4 w-4" /> New Shipment
-            </Button>
-          </Link>
-        </div>
+        <Button 
+          className="bg-kargon-red hover:bg-kargon-red/90"
+          onClick={handleMakePayment}
+        >
+          <DollarSign className="mr-2 h-4 w-4" /> Make Payment
+        </Button>
       </div>
       
       {/* Summary Cards */}
@@ -233,10 +204,10 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ loading, payments }) => {
                       <TableRow>
                         <TableHead>Invoice ID</TableHead>
                         <TableHead>Amount</TableHead>
-                        <TableHead>Payment Method</TableHead>
                         <TableHead>Issue Date</TableHead>
+                        <TableHead>Due Date</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>Reference</TableHead>
+                        <TableHead>Shipment</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -244,9 +215,9 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ loading, payments }) => {
                       {processedPayments.map((payment) => (
                         <TableRow key={payment.id}>
                           <TableCell className="font-medium">INV-{payment.id.substring(0, 8)}</TableCell>
-                          <TableCell>{formatCurrency(Number(payment.amount), payment.currency)}</TableCell>
-                          <TableCell>{payment.payment_method}</TableCell>
+                          <TableCell>${Number(payment.amount).toFixed(2)}</TableCell>
                           <TableCell>{format(new Date(payment.created_at), 'yyyy-MM-dd')}</TableCell>
+                          <TableCell>{payment.dueDate}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               {getStatusIcon(payment.status)}
@@ -256,24 +227,14 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ loading, payments }) => {
                             </div>
                           </TableCell>
                           <TableCell>
-                            {payment.transaction_id ? 
-                              <span className="text-xs font-mono">{payment.transaction_id.substring(0, 10)}</span> : 
+                            {payment.shipment_id ? 
+                              payment.shipment_id.substring(0, 8) : 
                               '-'}
                           </TableCell>
                           <TableCell className="text-right">
                             <Button variant="ghost" size="sm">
                               View
                             </Button>
-                            {(payment.status === 'pending' || payment.status === 'Pending') && (
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="text-blue-600 hover:text-blue-800"
-                                onClick={() => openPaymentModal(payment)}
-                              >
-                                Pay
-                              </Button>
-                            )}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -350,15 +311,6 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ loading, payments }) => {
           </Card>
         </TabsContent>
       </Tabs>
-      
-      <PaymentModal 
-        open={isPaymentModalOpen} 
-        onOpenChange={setIsPaymentModalOpen}
-        invoice={selectedInvoice}
-        onSuccess={() => {
-          window.location.reload();
-        }}
-      />
     </div>
   );
 };

@@ -1,6 +1,5 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.21.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,17 +14,12 @@ serve(async (req) => {
 
   try {
     const PAYSTACK_SECRET_KEY = Deno.env.get('PAYSTACK_SECRET_KEY');
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
-    const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
     
-    if (!PAYSTACK_SECRET_KEY || !SUPABASE_URL || !SUPABASE_ANON_KEY) {
-      throw new Error('Required environment variables are not set');
+    if (!PAYSTACK_SECRET_KEY) {
+      throw new Error('PAYSTACK_SECRET_KEY is not set');
     }
 
-    // Initialize Supabase client
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    const { reference, userId, shipmentId } = await req.json();
+    const { reference } = await req.json();
 
     if (!reference) {
       throw new Error('Payment reference is required');
@@ -48,32 +42,6 @@ serve(async (req) => {
 
     if (!verifyResponse.ok) {
       throw new Error(`Failed to verify payment: ${verifyData.message}`);
-    }
-
-    // If payment verification is successful, store payment in database
-    if (verifyData.status && verifyData.data.status === 'success') {
-      const { data: paymentData, error: paymentError } = await supabase
-        .from('payments')
-        .insert([
-          {
-            amount: verifyData.data.amount / 100, // Convert from kobo to naira
-            payment_method: 'Paystack',
-            status: 'Completed',
-            shipment_id: shipmentId,
-            user_id: userId,
-            transaction_id: reference,
-            payment_provider: 'paystack',
-            payment_reference: reference,
-            currency: 'NGN'
-          }
-        ]);
-      
-      if (paymentError) {
-        console.error('Error storing payment:', paymentError);
-        throw new Error(`Failed to store payment information: ${paymentError.message}`);
-      }
-
-      console.log('Payment stored successfully:', paymentData);
     }
 
     return new Response(
