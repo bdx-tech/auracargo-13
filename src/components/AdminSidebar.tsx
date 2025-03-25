@@ -7,8 +7,7 @@ import {
   Package, 
   Settings, 
   LogOut, 
-  Shield,
-  CreditCard
+  Shield
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -21,7 +20,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab }) 
     { id: "overview", label: "Dashboard", icon: LayoutDashboard },
     { id: "users", label: "Users", icon: Users },
     { id: "shipments", label: "Shipments", icon: Package },
-    { id: "payments", label: "Payments", icon: CreditCard },
     { id: "settings", label: "System Settings", icon: Settings },
   ];
 

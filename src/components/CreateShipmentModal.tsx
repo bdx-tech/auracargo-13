@@ -29,7 +29,6 @@ const CreateShipmentModal: React.FC<CreateShipmentModalProps> = ({
     origin: "",
     destination: "",
     weight: "",
-    dimensions: "",
     service_type: "Standard",
   });
 
@@ -55,7 +54,6 @@ const CreateShipmentModal: React.FC<CreateShipmentModalProps> = ({
           origin: formData.origin,
           destination: formData.destination,
           weight: formData.weight ? parseFloat(formData.weight) : null,
-          dimensions: formData.dimensions || null,
           service_type: formData.service_type,
           status: 'Pending',
           tracking_number: trackingNumber,
@@ -84,7 +82,6 @@ const CreateShipmentModal: React.FC<CreateShipmentModalProps> = ({
         origin: "",
         destination: "",
         weight: "",
-        dimensions: "",
         service_type: "Standard",
       });
       
@@ -143,31 +140,18 @@ const CreateShipmentModal: React.FC<CreateShipmentModalProps> = ({
               />
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="weight">Weight (kg)</Label>
-                <Input
-                  id="weight"
-                  name="weight"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.weight}
-                  onChange={handleChange}
-                  placeholder="10.5"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="dimensions">Dimensions (LxWxH cm)</Label>
-                <Input
-                  id="dimensions"
-                  name="dimensions"
-                  value={formData.dimensions}
-                  onChange={handleChange}
-                  placeholder="30x20x15"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="weight">Weight (kg)</Label>
+              <Input
+                id="weight"
+                name="weight"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.weight}
+                onChange={handleChange}
+                placeholder="10.5"
+              />
             </div>
             
             <div className="space-y-2">
