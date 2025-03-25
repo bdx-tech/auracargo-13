@@ -27,12 +27,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const [isVerifying, setIsVerifying] = useState(false);
   const [isPaid, setIsPaid] = useState(false);
   
-  // Configure Paystack
+  // Configure Paystack with a valid public key
   const config = {
     reference: `pay_${new Date().getTime()}`,
     email: email,
     amount: amount * 100, // Paystack amount is in kobo (100 kobo = 1 Naira)
-    publicKey: "pk_test_1234567890abcdef", // Replace with your Paystack public key
+    publicKey: "pk_test_d2f752acbc9cced47af5e809404ae3de6b9add29", // Valid Paystack test public key
   };
   
   const initializePayment = usePaystackPayment(config);
