@@ -24,7 +24,6 @@ interface OverviewPageProps {
   loading: boolean;
   data: {
     shipments: any[];
-    documents: any[];
     notifications: any[];
   };
   setActiveTab: (tab: string) => void;

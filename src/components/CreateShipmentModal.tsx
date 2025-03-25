@@ -29,7 +29,6 @@ const CreateShipmentModal: React.FC<CreateShipmentModalProps> = ({
     origin: "",
     destination: "",
     weight: "",
-    service_type: "Standard",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,7 +53,6 @@ const CreateShipmentModal: React.FC<CreateShipmentModalProps> = ({
           origin: formData.origin,
           destination: formData.destination,
           weight: formData.weight ? parseFloat(formData.weight) : null,
-          service_type: formData.service_type,
           status: 'Pending',
           tracking_number: trackingNumber,
           user_id: user.id
@@ -82,7 +80,6 @@ const CreateShipmentModal: React.FC<CreateShipmentModalProps> = ({
         origin: "",
         destination: "",
         weight: "",
-        service_type: "Standard",
       });
       
       onOpenChange(false);
@@ -151,17 +148,6 @@ const CreateShipmentModal: React.FC<CreateShipmentModalProps> = ({
                 value={formData.weight}
                 onChange={handleChange}
                 placeholder="10.5"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="service_type">Service Type</Label>
-              <Input
-                id="service_type"
-                name="service_type"
-                value={formData.service_type}
-                onChange={handleChange}
-                placeholder="Standard, Express, etc."
               />
             </div>
           </div>

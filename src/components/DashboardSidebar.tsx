@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { 
   LayoutDashboard, 
   Package, 
-  FileText, 
   Settings, 
   LogOut, 
   User
@@ -26,7 +25,6 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   const menuItems = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
     { id: "shipments", label: "Shipments", icon: Package },
-    { id: "documents", label: "Documents", icon: FileText },
     { id: "settings", label: "Settings", icon: Settings },
   ];
 

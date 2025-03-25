@@ -4,7 +4,6 @@ import Navigation from "@/components/Navigation";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import OverviewPage from "./dashboard/Overview";
 import ShipmentsPage from "./dashboard/Shipments";
-import DocumentsPage from "./dashboard/Documents";
 import SettingsPage from "./dashboard/Settings";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,7 +14,6 @@ const Dashboard = () => {
   const { user, profile } = useAuth();
   const [dashboardData, setDashboardData] = useState({
     shipments: [],
-    documents: [],
     notifications: []
   });
   const [loading, setLoading] = useState(true);
@@ -36,14 +34,6 @@ const Dashboard = () => {
           
         if (shipmentsError) throw shipmentsError;
         
-        // Fetch documents
-        const { data: documents, error: documentsError } = await supabase
-          .from('documents')
-          .select('*')
-          .eq('user_id', user.id);
-          
-        if (documentsError) throw documentsError;
-        
         // Fetch notifications
         const { data: notifications, error: notificationsError } = await supabase
           .from('notifications')
@@ -55,7 +45,6 @@ const Dashboard = () => {
         
         setDashboardData({
           shipments: shipments || [],
-          documents: documents || [],
           notifications: notifications || []
         });
       } catch (error: any) {
@@ -163,12 +152,6 @@ const Dashboard = () => {
               <ShipmentsPage 
                 loading={loading}
                 shipments={dashboardData.shipments} 
-              />
-            }
-            {activeTab === "documents" && 
-              <DocumentsPage 
-                loading={loading}
-                documents={dashboardData.documents} 
               />
             }
             {activeTab === "settings" && 

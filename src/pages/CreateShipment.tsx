@@ -33,7 +33,6 @@ const shipmentFormSchema = z.object({
   origin: z.string().min(5, { message: "Origin address is required" }),
   destination: z.string().min(5, { message: "Destination address is required" }),
   weight: z.coerce.number().min(0.1, { message: "Weight must be greater than 0" }),
-  service_type: z.string().default("Standard"),
   recipient_name: z.string().min(3, { message: "Recipient name is required" }),
   recipient_email: z.string().email({ message: "Valid email is required" }).optional(),
   recipient_phone: z.string().min(5, { message: "Valid phone number is required" }),
@@ -53,7 +52,6 @@ const CreateShipment = () => {
       origin: "",
       destination: "",
       weight: undefined,
-      service_type: "Standard",
       recipient_name: "",
       recipient_email: "",
       recipient_phone: "",
@@ -77,7 +75,6 @@ const CreateShipment = () => {
             origin: data.origin,
             destination: data.destination,
             weight: data.weight,
-            service_type: data.service_type,
             status: 'Pending',
             tracking_number: trackingNumber,
             user_id: user.id
@@ -191,23 +188,6 @@ const CreateShipment = () => {
                                 step="0.01" 
                                 min="0.1" 
                                 placeholder="10.5"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="service_type"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Service Type</FormLabel>
-                            <FormControl>
-                              <Input 
-                                placeholder="Standard, Express, etc."
                                 {...field}
                               />
                             </FormControl>
