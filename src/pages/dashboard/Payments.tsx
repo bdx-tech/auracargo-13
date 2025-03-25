@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,14 +43,13 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ loading, payments }) => {
     .filter(payment => payment.status === 'paid')
     .reduce((sum, payment) => sum + Number(payment.amount), 0);
     
-  const totalOutstanding = processedPayments
-    .filter(payment => payment.status !== 'paid')
-    .reduce((sum, payment) => sum + Number(payment.amount), 0);
+  const pendingPayments = processedPayments.filter(payment => payment.status !== 'paid');
+  const hasPendingPayments = pendingPayments.length > 0;
   
   // Find next payment due
-  const nextPaymentDue = processedPayments
-    .filter(payment => payment.status === 'pending')
-    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0];
+  const nextPaymentDue = hasPendingPayments
+    ? pendingPayments.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0]
+    : null;
   
   // Mock data for payment methods
   const paymentMethods = [
@@ -102,7 +102,6 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ loading, payments }) => {
   };
 
   const handlePaymentSuccess = async () => {
-    // Refresh or update the UI if needed
     toast({
       title: "Payment Successful",
       description: "Your payment has been processed successfully.",
@@ -113,11 +112,11 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ loading, payments }) => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-kargon-dark">Payments</h1>
-        {processedPayments.some(p => p.status !== 'paid') && (
+        {hasPendingPayments && (
           <Button 
             className="bg-kargon-red hover:bg-kargon-red/90"
             onClick={() => handleMakePayment(
-              processedPayments.find(p => p.status !== 'paid')
+              pendingPayments[0]
             )}
           >
             <DollarSign className="mr-2 h-4 w-4" /> Make Payment
@@ -126,7 +125,7 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ loading, payments }) => {
       </div>
       
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className={`grid grid-cols-1 ${hasPendingPayments ? 'md:grid-cols-3' : 'md:grid-cols-1'} gap-6`}>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-gray-500">Total Paid</CardTitle>
@@ -137,55 +136,56 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ loading, payments }) => {
               <Skeleton className="h-8 w-28" />
             ) : (
               <>
-                <div className="text-2xl font-bold">${totalPaid.toFixed(2)}</div>
+                <div className="text-2xl font-bold">{formatCurrency(totalPaid, processedPayments[0]?.currency || 'USD')}</div>
                 <p className="text-xs text-gray-500 mt-1">All time</p>
               </>
             )}
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Outstanding</CardTitle>
-            <AlertCircle className="h-4 w-4 text-amber-600" />
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <Skeleton className="h-8 w-28" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">${totalOutstanding.toFixed(2)}</div>
-                <p className="text-xs text-gray-500 mt-1">
-                  Across {processedPayments.filter(p => p.status !== 'paid').length} invoices
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Next Payment Due</CardTitle>
-            <Clock className="h-4 w-4 text-kargon-red" />
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <Skeleton className="h-8 w-28" />
-            ) : nextPaymentDue ? (
-              <>
-                <div className="text-2xl font-bold">
-                  {format(new Date(nextPaymentDue.dueDate), 'MMM dd, yyyy')}
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  ${Number(nextPaymentDue.amount).toFixed(2)}
-                </p>
-              </>
-            ) : (
-              <>
-                <div className="text-2xl font-bold">No payments due</div>
-                <p className="text-xs text-gray-500 mt-1">All payments are settled</p>
-              </>
-            )}
-          </CardContent>
-        </Card>
+        
+        {hasPendingPayments && (
+          <>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-gray-500">Pending Payments</CardTitle>
+                <AlertCircle className="h-4 w-4 text-amber-600" />
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <Skeleton className="h-8 w-28" />
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold">{pendingPayments.length}</div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {pendingPayments.length === 1 ? 'Invoice' : 'Invoices'} to be paid
+                    </p>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-gray-500">Next Payment Due</CardTitle>
+                <Clock className="h-4 w-4 text-kargon-red" />
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <Skeleton className="h-8 w-28" />
+                ) : nextPaymentDue ? (
+                  <>
+                    <div className="text-2xl font-bold">
+                      {format(new Date(nextPaymentDue.dueDate), 'MMM dd, yyyy')}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {formatCurrency(Number(nextPaymentDue.amount), nextPaymentDue.currency)}
+                    </p>
+                  </>
+                ) : null}
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
       
       <Tabs defaultValue="invoices" className="w-full" value={activeTab} onValueChange={setActiveTab}>
@@ -249,7 +249,19 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ loading, payments }) => {
                           <TableCell>{payment.payment_method || '-'}</TableCell>
                           <TableCell>
                             {payment.payment_reference ? 
-                              payment.payment_reference.substring(0, 8) : 
+                              <div className="flex items-center gap-1">
+                                {payment.payment_reference.substring(0, 8)}
+                                {payment.payment_provider === 'paystack' && (
+                                  <a 
+                                    href={`https://dashboard.paystack.com/#/transactions/${payment.payment_reference}`} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-blue-500 hover:text-blue-700"
+                                  >
+                                    <ExternalLink className="h-3 w-3" />
+                                  </a>
+                                )}
+                              </div> : 
                               '-'}
                           </TableCell>
                           <TableCell className="text-right">

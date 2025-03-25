@@ -59,8 +59,27 @@ serve(async (req) => {
           card_type: verifyData.data.authorization?.card_type,
           bank: verifyData.data.authorization?.bank,
           last4: verifyData.data.authorization?.last4,
-        }
+          exp_month: verifyData.data.authorization?.exp_month,
+          exp_year: verifyData.data.authorization?.exp_year,
+          channel: verifyData.data.authorization?.channel,
+          reusable: verifyData.data.authorization?.reusable,
+        },
+        customer: {
+          id: verifyData.data.customer?.id,
+          first_name: verifyData.data.customer?.first_name,
+          last_name: verifyData.data.customer?.last_name,
+          email: verifyData.data.customer?.email,
+          phone: verifyData.data.customer?.phone,
+        },
+        metadata: verifyData.data.metadata
       });
+      
+      // Update database if the payment is successful
+      if (verifyData.data.status === 'success') {
+        // Note: In an edge function, we can't directly update the database
+        // The calling code should handle this based on the returned data
+        console.log('Payment verified as successful, caller should update database');
+      }
     }
 
     return new Response(
