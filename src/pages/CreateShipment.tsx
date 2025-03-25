@@ -8,7 +8,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import Navigation from "@/components/Navigation";
-import { Loader2, Package, ArrowLeft } from "lucide-react";
+import PaymentModal from "@/components/PaymentModal";
+import { Loader2, Package, ArrowLeft, CreditCard } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -45,6 +46,8 @@ const CreateShipment = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [shipmentData, setShipmentData] = useState<ShipmentFormValues | null>(null);
 
   const form = useForm<ShipmentFormValues>({
     resolver: zodResolver(shipmentFormSchema),
@@ -58,8 +61,21 @@ const CreateShipment = () => {
     },
   });
 
-  const onSubmit = async (data: ShipmentFormValues) => {
-    if (!user) return;
+  // Calculate shipping fee based on weight (simplified example)
+  const calculateShippingFee = (weight: number): number => {
+    return weight * 1000; // ₦1000 per kg
+  };
+
+  const handleFormSubmit = (data: ShipmentFormValues) => {
+    // Store shipment data temporarily
+    setShipmentData(data);
+    
+    // Open payment modal
+    setShowPaymentModal(true);
+  };
+  
+  const handlePaymentSuccess = async () => {
+    if (!user || !shipmentData) return;
     
     setIsProcessing(true);
     
@@ -68,16 +84,20 @@ const CreateShipment = () => {
       const trackingNumber = `AUR${Math.floor(100000 + Math.random() * 900000)}`;
       
       // Create shipment
-      const { data: shipmentData, error: shipmentError } = await supabase
+      const { data: shipmentResult, error: shipmentError } = await supabase
         .from('shipments')
         .insert([
           {
-            origin: data.origin,
-            destination: data.destination,
-            weight: data.weight,
+            origin: shipmentData.origin,
+            destination: shipmentData.destination,
+            weight: shipmentData.weight,
             status: 'Pending',
             tracking_number: trackingNumber,
-            user_id: user.id
+            user_id: user.id,
+            recipient_name: shipmentData.recipient_name,
+            recipient_email: shipmentData.recipient_email,
+            recipient_phone: shipmentData.recipient_phone,
+            payment_status: 'paid'
           }
         ])
         .select();
@@ -90,7 +110,7 @@ const CreateShipment = () => {
         .insert([
           {
             title: "New Shipment Created",
-            content: `Your shipment to ${data.destination} has been created with tracking number ${trackingNumber} and is pending approval.`,
+            content: `Your shipment to ${shipmentData.destination} has been created with tracking number ${trackingNumber} and is pending approval.`,
             user_id: user.id
           }
         ]);
@@ -137,13 +157,13 @@ const CreateShipment = () => {
                 <CardTitle>Create New Shipment</CardTitle>
               </div>
               <CardDescription>
-                Enter shipment details to create a new shipment.
+                Enter shipment details to create a new shipment. Payment will be required to complete the process.
               </CardDescription>
             </CardHeader>
             
             <CardContent>
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-4">
                       <h3 className="text-lg font-medium">Shipment Details</h3>
@@ -244,6 +264,23 @@ const CreateShipment = () => {
                     </div>
                   </div>
                   
+                  {form.watch("weight") && (
+                    <div className="border rounded-md p-4 bg-gray-50">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="h-5 w-5 text-primary" />
+                          <span className="font-medium">Estimated Shipping Cost</span>
+                        </div>
+                        <span className="font-bold text-lg">
+                          ₦{calculateShippingFee(form.watch("weight")).toFixed(2)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-500 mt-2">
+                        This amount will be charged when you proceed to payment.
+                      </p>
+                    </div>
+                  )}
+                  
                   <div className="flex justify-between pt-4">
                     <Button
                       variant="outline"
@@ -261,7 +298,10 @@ const CreateShipment = () => {
                           Processing...
                         </>
                       ) : (
-                        'Create Shipment'
+                        <>
+                          <CreditCard className="mr-2 h-4 w-4" />
+                          Proceed to Payment
+                        </>
                       )}
                     </Button>
                   </div>
@@ -271,6 +311,17 @@ const CreateShipment = () => {
           </Card>
         </div>
       </div>
+      
+      {/* Payment Modal */}
+      {showPaymentModal && user && shipmentData && (
+        <PaymentModal
+          open={showPaymentModal}
+          onOpenChange={setShowPaymentModal}
+          onSuccess={handlePaymentSuccess}
+          amount={calculateShippingFee(shipmentData.weight)}
+          email={user.email || shipmentData.recipient_email || ''}
+        />
+      )}
     </div>
   );
 };

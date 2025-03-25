@@ -7,8 +7,9 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2 } from "lucide-react";
+import { Loader2, CreditCard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import PaymentModal from "@/components/PaymentModal";
 
 interface CreateShipmentModalProps {
   open: boolean;
@@ -25,6 +26,7 @@ const CreateShipmentModal: React.FC<CreateShipmentModalProps> = ({
   const { toast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [formData, setFormData] = useState({
     origin: "",
     destination: "",
@@ -36,8 +38,19 @@ const CreateShipmentModal: React.FC<CreateShipmentModalProps> = ({
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Calculate shipping fee based on weight
+  const calculateShippingFee = (): number => {
+    const weight = parseFloat(formData.weight) || 0;
+    return weight * 1000; // ₦1000 per kg
+  };
+
+  const handleSubmitForm = (e: React.FormEvent) => {
     e.preventDefault();
+    // Proceed to payment
+    setShowPaymentModal(true);
+  };
+
+  const handlePaymentSuccess = async () => {
     if (!user) return;
     
     setLoading(true);
@@ -55,7 +68,8 @@ const CreateShipmentModal: React.FC<CreateShipmentModalProps> = ({
           weight: formData.weight ? parseFloat(formData.weight) : null,
           status: 'Pending',
           tracking_number: trackingNumber,
-          user_id: user.id
+          user_id: user.id,
+          payment_status: 'paid'
         }])
         .select();
         
@@ -102,74 +116,105 @@ const CreateShipmentModal: React.FC<CreateShipmentModalProps> = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Create New Shipment</DialogTitle>
-          <DialogDescription>
-            Enter the shipment details below to create a new shipment. It will be reviewed by our team.
-          </DialogDescription>
-        </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <div className="grid grid-cols-1 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="origin">Origin Address</Label>
-              <Input
-                id="origin"
-                name="origin"
-                value={formData.origin}
-                onChange={handleChange}
-                placeholder="123 Main St, City, Country"
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="destination">Destination Address</Label>
-              <Input
-                id="destination"
-                name="destination"
-                value={formData.destination}
-                onChange={handleChange}
-                placeholder="456 Elm St, City, Country"
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="weight">Weight (kg)</Label>
-              <Input
-                id="weight"
-                name="weight"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.weight}
-                onChange={handleChange}
-                placeholder="10.5"
-              />
-            </div>
-          </div>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Create New Shipment</DialogTitle>
+            <DialogDescription>
+              Enter the shipment details below to create a new shipment. You'll need to complete payment before it's submitted.
+            </DialogDescription>
+          </DialogHeader>
           
-          <DialogFooter>
-            <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                'Create Shipment'
-              )}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+          <form onSubmit={handleSubmitForm} className="space-y-4 py-4">
+            <div className="grid grid-cols-1 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="origin">Origin Address</Label>
+                <Input
+                  id="origin"
+                  name="origin"
+                  value={formData.origin}
+                  onChange={handleChange}
+                  placeholder="123 Main St, City, Country"
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="destination">Destination Address</Label>
+                <Input
+                  id="destination"
+                  name="destination"
+                  value={formData.destination}
+                  onChange={handleChange}
+                  placeholder="456 Elm St, City, Country"
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="weight">Weight (kg)</Label>
+                <Input
+                  id="weight"
+                  name="weight"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.weight}
+                  onChange={handleChange}
+                  placeholder="10.5"
+                  required
+                />
+              </div>
+            </div>
+            
+            {formData.weight && (
+              <div className="border rounded-md p-4 bg-gray-50">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-4 w-4 text-primary" />
+                    <span className="font-medium">Shipping Cost</span>
+                  </div>
+                  <span className="font-bold">
+                    ₦{calculateShippingFee().toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            )}
+            
+            <DialogFooter>
+              <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading || !formData.weight}>
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Proceed to Payment
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Payment Modal */}
+      {showPaymentModal && user && (
+        <PaymentModal
+          open={showPaymentModal}
+          onOpenChange={setShowPaymentModal}
+          onSuccess={handlePaymentSuccess}
+          amount={calculateShippingFee()}
+          email={user.email || ''}
+        />
+      )}
+    </>
   );
 };
 
