@@ -2,217 +2,171 @@
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Loader2, Check } from "lucide-react";
+import { usePaystackPayment } from "react-paystack";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, CheckCircle2, CreditCard } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface PaymentModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  invoice?: {
-    id: string;
-    amount: number;
-    shipment_id?: string;
-  };
-  onSuccess?: () => void;
+  onSuccess: () => void;
+  amount: number;
+  email: string;
 }
 
 const PaymentModal: React.FC<PaymentModalProps> = ({
   open,
   onOpenChange,
-  invoice,
-  onSuccess
+  onSuccess,
+  amount,
+  email
 }) => {
-  const { user } = useAuth();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState("credit_card");
-  const [paymentInfo, setPaymentInfo] = useState({
-    cardNumber: "",
-    expiryDate: "",
-    cvc: "",
-    name: "",
-  });
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setPaymentInfo(prev => ({ ...prev, [name]: value }));
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isPaid, setIsPaid] = useState(false);
+  
+  // Configure Paystack with a valid public key
+  const config = {
+    reference: `pay_${new Date().getTime()}`,
+    email: email,
+    amount: amount * 100, // Paystack amount is in kobo (100 kobo = 1 Naira)
+    publicKey: "pk_test_d2f752acbc9cced47af5e809404ae3de6b9add29", // Valid Paystack test public key
   };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || !invoice) return;
+  
+  const initializePayment = usePaystackPayment(config);
+  
+  const handlePaymentInitialize = () => {
+    setIsProcessing(true);
     
-    setLoading(true);
-    
+    // Initialize Paystack payment
+    initializePayment({
+      onSuccess: (reference) => handlePaymentSuccess(reference),
+      onClose: () => {
+        setIsProcessing(false);
+        toast({
+          variant: "destructive",
+          title: "Payment Cancelled",
+          description: "You've cancelled the payment process.",
+        });
+      },
+    });
+  };
+  
+  const handlePaymentSuccess = async (reference: any) => {
     try {
-      // In a real app, you would integrate with a payment processor here
-      // For our dummy implementation, we'll just update the database
+      setIsVerifying(true);
       
-      // Generate mock transaction ID
-      const transactionId = `TXN${Math.floor(100000000 + Math.random() * 900000000)}`;
+      // Call Supabase Edge Function to verify the payment
+      const { data, error } = await supabase.functions.invoke('verify-payment', {
+        body: { reference: reference.reference }
+      });
       
-      // Update payment status in database
-      const { error } = await supabase
-        .from('payments')
-        .update({
-          status: 'paid',
-          payment_method: paymentMethod,
-          transaction_id: transactionId,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', invoice.id);
-        
       if (error) throw error;
       
-      // Create a notification about the payment
-      await supabase
-        .from('notifications')
-        .insert([{
+      if (data.status === "success" && data.data.status === "success") {
+        setIsPaid(true);
+        setIsVerifying(false);
+        setIsProcessing(false);
+        
+        toast({
           title: "Payment Successful",
-          content: `Your payment of $${invoice.amount.toFixed(2)} has been processed successfully.`,
-          user_id: user.id
-        }]);
-      
-      setSuccess(true);
-      
-      // Reset form after showing success for 2 seconds
-      setTimeout(() => {
-        setSuccess(false);
-        setPaymentInfo({
-          cardNumber: "",
-          expiryDate: "",
-          cvc: "",
-          name: "",
+          description: "Your payment has been verified successfully.",
         });
-        onOpenChange(false);
-        if (onSuccess) onSuccess();
-      }, 2000);
-      
+        
+        // Wait a moment to show the success state before closing
+        setTimeout(() => {
+          onOpenChange(false);
+          onSuccess();
+        }, 2000);
+      } else {
+        throw new Error("Payment verification failed");
+      }
     } catch (error: any) {
-      console.error("Error processing payment:", error);
+      console.error("Payment verification error:", error);
+      setIsVerifying(false);
+      setIsProcessing(false);
+      
       toast({
         variant: "destructive",
-        title: "Payment Failed",
-        description: error.message || "Failed to process payment. Please try again.",
+        title: "Payment Error",
+        description: error.message || "There was an error verifying your payment.",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
-  if (!invoice) return null;
-
   return (
-    <Dialog open={open} onOpenChange={(value) => !loading && onOpenChange(value)}>
-      <DialogContent className="sm:max-w-[500px]">
+    <Dialog open={open} onOpenChange={(newOpen) => {
+      // Prevent closing if payment is in progress
+      if (isProcessing && newOpen === false) return;
+      onOpenChange(newOpen);
+    }}>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Make a Payment</DialogTitle>
+          <DialogTitle>Complete Payment</DialogTitle>
           <DialogDescription>
-            Complete your payment of ${invoice.amount.toFixed(2)}
+            Please complete your payment to create your shipment.
           </DialogDescription>
         </DialogHeader>
         
-        {success ? (
-          <div className="py-12 flex flex-col items-center justify-center space-y-4">
-            <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center">
-              <CheckCircle2 className="h-8 w-8 text-green-600" />
+        <div className="space-y-6 py-4">
+          <div className="space-y-2">
+            <div className="border rounded-md p-4">
+              <div className="flex justify-between mb-2">
+                <span className="text-sm text-gray-500">Service Fee</span>
+                <span className="font-medium">₦{amount.toFixed(2)}</span>
+              </div>
+              
+              <div className="border-t pt-2 mt-2 flex justify-between">
+                <span className="font-medium">Total</span>
+                <span className="font-bold">₦{amount.toFixed(2)}</span>
+              </div>
             </div>
-            <h3 className="text-xl font-medium">Payment Successful!</h3>
-            <p className="text-muted-foreground text-center">
-              Your payment has been processed successfully.
-            </p>
           </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4 py-4">
-            <div className="space-y-4">
-              <RadioGroup
-                value={paymentMethod}
-                onValueChange={setPaymentMethod}
-                className="flex flex-col space-y-2"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="credit_card" id="credit_card" />
-                  <Label htmlFor="credit_card" className="flex items-center">
-                    <CreditCard className="mr-2 h-4 w-4" />
-                    Credit Card
-                  </Label>
-                </div>
-              </RadioGroup>
-              
-              <div className="space-y-2">
-                <Label htmlFor="name">Name on Card</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  value={paymentInfo.name}
-                  onChange={handleChange}
-                  placeholder="John Doe"
-                  required
-                />
+          
+          {isPaid ? (
+            <div className="flex flex-col items-center justify-center py-4 space-y-3">
+              <div className="bg-green-100 p-3 rounded-full">
+                <Check className="h-8 w-8 text-green-600" />
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="cardNumber">Card Number</Label>
-                <Input
-                  id="cardNumber"
-                  name="cardNumber"
-                  value={paymentInfo.cardNumber}
-                  onChange={handleChange}
-                  placeholder="4242 4242 4242 4242"
-                  required
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="expiryDate">Expiry Date</Label>
-                  <Input
-                    id="expiryDate"
-                    name="expiryDate"
-                    value={paymentInfo.expiryDate}
-                    onChange={handleChange}
-                    placeholder="MM/YY"
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="cvc">CVC</Label>
-                  <Input
-                    id="cvc"
-                    name="cvc"
-                    value={paymentInfo.cvc}
-                    onChange={handleChange}
-                    placeholder="123"
-                    required
-                  />
-                </div>
-              </div>
+              <p className="text-center font-medium text-green-600">Payment Successful!</p>
+              <p className="text-center text-sm text-gray-500">Redirecting to create your shipment...</p>
             </div>
-            
+          ) : (
             <DialogFooter>
-              <Button variant="outline" type="button" onClick={() => onOpenChange(false)} disabled={loading}>
+              <Button
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={isProcessing || isVerifying}
+              >
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? (
+              <Button
+                onClick={handlePaymentInitialize}
+                disabled={isProcessing || isVerifying}
+              >
+                {isProcessing ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
+                    {isVerifying ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Verifying...
+                      </>
+                    ) : (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    )}
                   </>
                 ) : (
-                  `Pay $${invoice.amount.toFixed(2)}`
+                  'Pay Now'
                 )}
               </Button>
             </DialogFooter>
-          </form>
-        )}
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );

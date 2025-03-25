@@ -6,7 +6,6 @@ import AdminSidebar from "@/components/AdminSidebar";
 import AdminOverview from "./admin/Overview";
 import UsersPage from "./admin/Users";
 import ShipmentsManagement from "./admin/ShipmentsManagement";
-import PaymentsManagement from "./admin/PaymentsManagement";
 import SystemSettings from "./admin/SystemSettings";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -36,7 +35,6 @@ const AdminDashboard = () => {
             {activeTab === "overview" && <AdminOverview />}
             {activeTab === "users" && <UsersPage />}
             {activeTab === "shipments" && <ShipmentsManagement />}
-            {activeTab === "payments" && <PaymentsManagement />}
             {activeTab === "settings" && <SystemSettings />}
           </div>
         </div>
