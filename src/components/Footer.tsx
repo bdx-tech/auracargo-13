@@ -58,22 +58,6 @@ const Footer = () => {
                 <ArrowRight size={14} className="mr-2 text-kargon-red" />
                 Contact
               </Link>
-              <Link to="/dashboard" className="text-gray-300 hover:text-white transition-colors py-1 flex items-center">
-                <ArrowRight size={14} className="mr-2 text-kargon-red" />
-                Dashboard
-              </Link>
-              <Link to="/tracking" className="text-gray-300 hover:text-white transition-colors py-1 flex items-center">
-                <ArrowRight size={14} className="mr-2 text-kargon-red" />
-                Track Shipment
-              </Link>
-              <Link to="/login" className="text-gray-300 hover:text-white transition-colors py-1 flex items-center">
-                <ArrowRight size={14} className="mr-2 text-kargon-red" />
-                Login
-              </Link>
-              <Link to="/signup" className="text-gray-300 hover:text-white transition-colors py-1 flex items-center">
-                <ArrowRight size={14} className="mr-2 text-kargon-red" />
-                Sign Up
-              </Link>
             </div>
           </div>
 
