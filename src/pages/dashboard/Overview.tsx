@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,32 +12,40 @@ import {
   Search,
   FileText,
   Plus,
-  ChevronRight
+  ChevronRight,
+  DollarSign
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import CreateShipmentModal from "@/components/CreateShipmentModal";
 import TrackShipmentModal from "@/components/TrackShipmentModal";
 import GenerateReportModal from "@/components/GenerateReportModal";
+import PaymentModal from "@/components/PaymentModal";
 
 interface OverviewPageProps {
   loading: boolean;
   data: {
     shipments: any[];
+    documents: any[];
+    payments: any[];
     notifications: any[];
   };
   setActiveTab: (tab: string) => void;
 }
 
 const OverviewPage: React.FC<OverviewPageProps> = ({ loading, data, setActiveTab }) => {
-  const { shipments, notifications } = data;
+  const { shipments, notifications, payments } = data;
   
   const [isCreateShipmentOpen, setIsCreateShipmentOpen] = useState(false);
   const [isTrackShipmentOpen, setIsTrackShipmentOpen] = useState(false);
   const [isGenerateReportOpen, setIsGenerateReportOpen] = useState(false);
+  const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   
   const recentShipments = shipments.slice(0, 4);
   const activeShipments = shipments.filter(ship => ship.status === 'in-transit').length;
   const pendingApprovals = shipments.filter(ship => ship.status === 'pending').length;
+  
+  const pendingPayment = payments.find(p => p.status === 'pending');
   
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
@@ -51,6 +58,11 @@ const OverviewPage: React.FC<OverviewPageProps> = ({ loading, data, setActiveTab
       default:
         return "bg-gray-100 text-gray-800 hover:bg-gray-100";
     }
+  };
+
+  const handleMakePayment = (invoice: any) => {
+    setSelectedInvoice(invoice);
+    setIsPaymentOpen(true);
   };
   
   const handleRefreshData = () => {
@@ -214,6 +226,15 @@ const OverviewPage: React.FC<OverviewPageProps> = ({ loading, data, setActiveTab
             >
               <Truck className="mr-2 h-4 w-4" /> Track Shipment
             </Button>
+            {pendingPayment && (
+              <Button 
+                className="w-full justify-start" 
+                variant="outline"
+                onClick={() => handleMakePayment(pendingPayment)}
+              >
+                <DollarSign className="mr-2 h-4 w-4" /> Pay Invoice (${pendingPayment.amount})
+              </Button>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -262,6 +283,13 @@ const OverviewPage: React.FC<OverviewPageProps> = ({ loading, data, setActiveTab
       <GenerateReportModal
         open={isGenerateReportOpen}
         onOpenChange={setIsGenerateReportOpen}
+      />
+      
+      <PaymentModal
+        open={isPaymentOpen}
+        onOpenChange={setIsPaymentOpen}
+        invoice={selectedInvoice}
+        onSuccess={handleRefreshData}
       />
     </div>
   );

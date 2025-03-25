@@ -8,7 +8,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import Navigation from "@/components/Navigation";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Truck } from "lucide-react";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -56,7 +55,7 @@ const ForgotPassword = () => {
         <div className="relative bg-white/90 backdrop-blur-sm shadow-lg rounded-lg p-8 w-full max-w-md border border-gray-200">
           <div className="absolute -top-5 left-1/2 transform -translate-x-1/2">
             <div className="h-10 w-10 bg-kargon-red rounded-full flex items-center justify-center">
-              <Truck className="text-white" size={18} />
+              <span className="text-white font-bold text-xl">K</span>
             </div>
           </div>
           

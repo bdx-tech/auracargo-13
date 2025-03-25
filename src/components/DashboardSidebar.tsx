@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { 
   LayoutDashboard, 
   Package, 
+  FileText, 
   Settings, 
   LogOut, 
-  User
+  User,
+  CreditCard
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -25,6 +27,8 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   const menuItems = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
     { id: "shipments", label: "Shipments", icon: Package },
+    { id: "documents", label: "Documents", icon: FileText },
+    { id: "payments", label: "Payments", icon: CreditCard },
     { id: "settings", label: "Settings", icon: Settings },
   ];
 

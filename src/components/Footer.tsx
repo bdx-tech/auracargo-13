@@ -2,7 +2,6 @@
 import { Phone, Mail, MapPin, Facebook, Twitter, Linkedin, Instagram, ArrowRight, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
@@ -42,42 +41,38 @@ const Footer = () => {
           <div>
             <h3 className="text-lg font-bold mb-6">Quick Links</h3>
             <div className="grid grid-cols-2 gap-2">
-              <Link to="/" className="text-gray-300 hover:text-white transition-colors py-1 flex items-center">
+              <a href="/" className="text-gray-300 hover:text-white transition-colors py-1 flex items-center">
                 <ArrowRight size={14} className="mr-2 text-kargon-red" />
                 Home
-              </Link>
-              <Link to="/services" className="text-gray-300 hover:text-white transition-colors py-1 flex items-center">
+              </a>
+              <a href="/services" className="text-gray-300 hover:text-white transition-colors py-1 flex items-center">
                 <ArrowRight size={14} className="mr-2 text-kargon-red" />
                 Services
-              </Link>
-              <Link to="/projects" className="text-gray-300 hover:text-white transition-colors py-1 flex items-center">
+              </a>
+              <a href="/projects" className="text-gray-300 hover:text-white transition-colors py-1 flex items-center">
                 <ArrowRight size={14} className="mr-2 text-kargon-red" />
                 Projects
-              </Link>
-              <Link to="/contact" className="text-gray-300 hover:text-white transition-colors py-1 flex items-center">
+              </a>
+              <a href="/contact" className="text-gray-300 hover:text-white transition-colors py-1 flex items-center">
                 <ArrowRight size={14} className="mr-2 text-kargon-red" />
                 Contact
-              </Link>
+              </a>
+              <a href="/privacy" className="text-gray-300 hover:text-white transition-colors py-1 flex items-center">
+                <ArrowRight size={14} className="mr-2 text-kargon-red" />
+                Privacy Policy
+              </a>
+              <a href="/terms" className="text-gray-300 hover:text-white transition-colors py-1 flex items-center">
+                <ArrowRight size={14} className="mr-2 text-kargon-red" />
+                Terms of Service
+              </a>
+              <a href="/faq" className="text-gray-300 hover:text-white transition-colors py-1 flex items-center">
+                <ArrowRight size={14} className="mr-2 text-kargon-red" />
+                FAQ
+              </a>
             </div>
           </div>
 
           <div>
-            <h3 className="text-lg font-bold mb-6">Legal</h3>
-            <div className="grid grid-cols-1 gap-2 mb-6">
-              <Link to="/privacy" className="text-gray-300 hover:text-white transition-colors py-1 flex items-center">
-                <ArrowRight size={14} className="mr-2 text-kargon-red" />
-                Privacy Policy
-              </Link>
-              <Link to="/terms" className="text-gray-300 hover:text-white transition-colors py-1 flex items-center">
-                <ArrowRight size={14} className="mr-2 text-kargon-red" />
-                Terms of Service
-              </Link>
-              <Link to="/faq" className="text-gray-300 hover:text-white transition-colors py-1 flex items-center">
-                <ArrowRight size={14} className="mr-2 text-kargon-red" />
-                FAQ
-              </Link>
-            </div>
-            
             <h3 className="text-lg font-bold mb-6">Our Newsletter</h3>
             <p className="text-gray-300 mb-4">
               Subscribe to our newsletter to stay updated with the latest news and special offers.
