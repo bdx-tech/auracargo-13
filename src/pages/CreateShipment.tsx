@@ -90,8 +90,6 @@ const CreateShipment = () => {
         throw new Error('Payment verification failed');
       }
       
-      console.log('Payment verified:', verifyData);
-      
       // Generate tracking number
       const trackingNumber = `AUR${Math.floor(100000 + Math.random() * 900000)}`;
       
@@ -116,18 +114,17 @@ const CreateShipment = () => {
       
       if (shipmentError) throw shipmentError;
       
-      // Create payment record with enhanced details
+      // Create payment record
       await supabase
         .from('payments')
         .insert([
           {
             amount: amount / 100, // Convert back to naira
-            currency: "NGN", // Nigerian Naira
             payment_method: 'Paystack',
-            status: 'paid',
+            status: 'Completed',
             shipment_id: shipmentData[0].id,
             user_id: user?.id,
-            transaction_id: verifyData.data.id,
+            transaction_id: reference.reference,
             payment_provider: 'paystack',
             payment_reference: reference.reference
           }
@@ -139,20 +136,20 @@ const CreateShipment = () => {
         .insert([
           {
             title: "New Shipment Created",
-            content: `Your shipment to ${formData.destination} has been created with tracking number ${trackingNumber} and payment has been confirmed.`,
+            content: `Your shipment to ${formData.destination} has been created with tracking number ${trackingNumber} and is pending approval.`,
             user_id: user?.id
           }
         ]);
       
       toast({
         title: "Payment Successful!",
-        description: "Your shipment has been created and payment has been confirmed.",
+        description: "Your shipment has been created and is pending approval.",
       });
       
       // Navigate to dashboard
       navigate('/dashboard');
       
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error creating shipment after payment:", error);
       toast({
         variant: "destructive",

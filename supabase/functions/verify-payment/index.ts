@@ -25,8 +25,6 @@ serve(async (req) => {
       throw new Error('Payment reference is required');
     }
 
-    console.log('Verifying payment with reference:', reference);
-
     // Verify payment with Paystack
     const verifyResponse = await fetch(
       `https://api.paystack.co/transaction/verify/${reference}`,
@@ -44,42 +42,6 @@ serve(async (req) => {
 
     if (!verifyResponse.ok) {
       throw new Error(`Failed to verify payment: ${verifyData.message}`);
-    }
-
-    // Enhanced logging with more payment details
-    if (verifyData.status && verifyData.data) {
-      console.log('Payment details:', {
-        amount: verifyData.data.amount / 100, // Convert from kobo to naira
-        currency: verifyData.data.currency,
-        transaction_date: verifyData.data.transaction_date,
-        status: verifyData.data.status,
-        reference: verifyData.data.reference,
-        authorization: {
-          authorization_code: verifyData.data.authorization?.authorization_code,
-          card_type: verifyData.data.authorization?.card_type,
-          bank: verifyData.data.authorization?.bank,
-          last4: verifyData.data.authorization?.last4,
-          exp_month: verifyData.data.authorization?.exp_month,
-          exp_year: verifyData.data.authorization?.exp_year,
-          channel: verifyData.data.authorization?.channel,
-          reusable: verifyData.data.authorization?.reusable,
-        },
-        customer: {
-          id: verifyData.data.customer?.id,
-          first_name: verifyData.data.customer?.first_name,
-          last_name: verifyData.data.customer?.last_name,
-          email: verifyData.data.customer?.email,
-          phone: verifyData.data.customer?.phone,
-        },
-        metadata: verifyData.data.metadata
-      });
-      
-      // Update database if the payment is successful
-      if (verifyData.data.status === 'success') {
-        // Note: In an edge function, we can't directly update the database
-        // The calling code should handle this based on the returned data
-        console.log('Payment verified as successful, caller should update database');
-      }
     }
 
     return new Response(

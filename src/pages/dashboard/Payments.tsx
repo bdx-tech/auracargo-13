@@ -13,13 +13,11 @@ import {
   FileText,
   AlertCircle,
   CheckCircle2,
-  Clock,
-  ExternalLink
+  Clock
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, addDays } from 'date-fns';
 import { useToast } from "@/components/ui/use-toast";
-import PaymentModal from "@/components/PaymentModal";
 
 interface PaymentsPageProps {
   loading: boolean;
@@ -29,8 +27,6 @@ interface PaymentsPageProps {
 const PaymentsPage: React.FC<PaymentsPageProps> = ({ loading, payments }) => {
   const [activeTab, setActiveTab] = useState("invoices");
   const { toast } = useToast();
-  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
-  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   
   // Pre-process payments to add due dates (30 days from creation)
   const processedPayments = payments.map(payment => ({
@@ -43,13 +39,14 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ loading, payments }) => {
     .filter(payment => payment.status === 'paid')
     .reduce((sum, payment) => sum + Number(payment.amount), 0);
     
-  const pendingPayments = processedPayments.filter(payment => payment.status !== 'paid');
-  const hasPendingPayments = pendingPayments.length > 0;
+  const totalOutstanding = processedPayments
+    .filter(payment => payment.status !== 'paid')
+    .reduce((sum, payment) => sum + Number(payment.amount), 0);
   
   // Find next payment due
-  const nextPaymentDue = hasPendingPayments
-    ? pendingPayments.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0]
-    : null;
+  const nextPaymentDue = processedPayments
+    .filter(payment => payment.status === 'pending')
+    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0];
   
   // Mock data for payment methods
   const paymentMethods = [
@@ -83,9 +80,11 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ loading, payments }) => {
     }
   };
 
-  const handleMakePayment = (payment: any) => {
-    setSelectedInvoice(payment);
-    setPaymentModalOpen(true);
+  const handleMakePayment = () => {
+    toast({
+      title: "Payment feature",
+      description: "Payment processing will be implemented soon.",
+    });
   };
 
   const handleExport = () => {
@@ -95,37 +94,20 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ loading, payments }) => {
     });
   };
 
-  const formatCurrency = (amount: number, currency: string = "USD") => {
-    return currency === "NGN" ? 
-      `₦${amount.toLocaleString()}` : 
-      `$${amount.toFixed(2)}`;
-  };
-
-  const handlePaymentSuccess = async () => {
-    toast({
-      title: "Payment Successful",
-      description: "Your payment has been processed successfully.",
-    });
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-kargon-dark">Payments</h1>
-        {hasPendingPayments && (
-          <Button 
-            className="bg-kargon-red hover:bg-kargon-red/90"
-            onClick={() => handleMakePayment(
-              pendingPayments[0]
-            )}
-          >
-            <DollarSign className="mr-2 h-4 w-4" /> Make Payment
-          </Button>
-        )}
+        <Button 
+          className="bg-kargon-red hover:bg-kargon-red/90"
+          onClick={handleMakePayment}
+        >
+          <DollarSign className="mr-2 h-4 w-4" /> Make Payment
+        </Button>
       </div>
       
       {/* Summary Cards */}
-      <div className={`grid grid-cols-1 ${hasPendingPayments ? 'md:grid-cols-3' : 'md:grid-cols-1'} gap-6`}>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-gray-500">Total Paid</CardTitle>
@@ -136,56 +118,55 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ loading, payments }) => {
               <Skeleton className="h-8 w-28" />
             ) : (
               <>
-                <div className="text-2xl font-bold">{formatCurrency(totalPaid, processedPayments[0]?.currency || 'USD')}</div>
+                <div className="text-2xl font-bold">${totalPaid.toFixed(2)}</div>
                 <p className="text-xs text-gray-500 mt-1">All time</p>
               </>
             )}
           </CardContent>
         </Card>
-        
-        {hasPendingPayments && (
-          <>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-gray-500">Pending Payments</CardTitle>
-                <AlertCircle className="h-4 w-4 text-amber-600" />
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <Skeleton className="h-8 w-28" />
-                ) : (
-                  <>
-                    <div className="text-2xl font-bold">{pendingPayments.length}</div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {pendingPayments.length === 1 ? 'Invoice' : 'Invoices'} to be paid
-                    </p>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-gray-500">Next Payment Due</CardTitle>
-                <Clock className="h-4 w-4 text-kargon-red" />
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <Skeleton className="h-8 w-28" />
-                ) : nextPaymentDue ? (
-                  <>
-                    <div className="text-2xl font-bold">
-                      {format(new Date(nextPaymentDue.dueDate), 'MMM dd, yyyy')}
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {formatCurrency(Number(nextPaymentDue.amount), nextPaymentDue.currency)}
-                    </p>
-                  </>
-                ) : null}
-              </CardContent>
-            </Card>
-          </>
-        )}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-gray-500">Outstanding</CardTitle>
+            <AlertCircle className="h-4 w-4 text-amber-600" />
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <Skeleton className="h-8 w-28" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">${totalOutstanding.toFixed(2)}</div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Across {processedPayments.filter(p => p.status !== 'paid').length} invoices
+                </p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-gray-500">Next Payment Due</CardTitle>
+            <Clock className="h-4 w-4 text-kargon-red" />
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <Skeleton className="h-8 w-28" />
+            ) : nextPaymentDue ? (
+              <>
+                <div className="text-2xl font-bold">
+                  {format(new Date(nextPaymentDue.dueDate), 'MMM dd, yyyy')}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  ${Number(nextPaymentDue.amount).toFixed(2)}
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">No payments due</div>
+                <p className="text-xs text-gray-500 mt-1">All payments are settled</p>
+              </>
+            )}
+          </CardContent>
+        </Card>
       </div>
       
       <Tabs defaultValue="invoices" className="w-full" value={activeTab} onValueChange={setActiveTab}>
@@ -226,8 +207,7 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ loading, payments }) => {
                         <TableHead>Issue Date</TableHead>
                         <TableHead>Due Date</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>Payment Method</TableHead>
-                        <TableHead>Reference</TableHead>
+                        <TableHead>Shipment</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -235,7 +215,7 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ loading, payments }) => {
                       {processedPayments.map((payment) => (
                         <TableRow key={payment.id}>
                           <TableCell className="font-medium">INV-{payment.id.substring(0, 8)}</TableCell>
-                          <TableCell>{formatCurrency(Number(payment.amount), payment.currency)}</TableCell>
+                          <TableCell>${Number(payment.amount).toFixed(2)}</TableCell>
                           <TableCell>{format(new Date(payment.created_at), 'yyyy-MM-dd')}</TableCell>
                           <TableCell>{payment.dueDate}</TableCell>
                           <TableCell>
@@ -246,38 +226,15 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ loading, payments }) => {
                               </Badge>
                             </div>
                           </TableCell>
-                          <TableCell>{payment.payment_method || '-'}</TableCell>
                           <TableCell>
-                            {payment.payment_reference ? 
-                              <div className="flex items-center gap-1">
-                                {payment.payment_reference.substring(0, 8)}
-                                {payment.payment_provider === 'paystack' && (
-                                  <a 
-                                    href={`https://dashboard.paystack.com/#/transactions/${payment.payment_reference}`} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="text-blue-500 hover:text-blue-700"
-                                  >
-                                    <ExternalLink className="h-3 w-3" />
-                                  </a>
-                                )}
-                              </div> : 
+                            {payment.shipment_id ? 
+                              payment.shipment_id.substring(0, 8) : 
                               '-'}
                           </TableCell>
                           <TableCell className="text-right">
-                            {payment.status !== 'paid' ? (
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={() => handleMakePayment(payment)}
-                              >
-                                Pay Now
-                              </Button>
-                            ) : (
-                              <Button variant="ghost" size="sm">
-                                Receipt
-                              </Button>
-                            )}
+                            <Button variant="ghost" size="sm">
+                              View
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -354,13 +311,6 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ loading, payments }) => {
           </Card>
         </TabsContent>
       </Tabs>
-      
-      <PaymentModal 
-        open={paymentModalOpen}
-        onOpenChange={setPaymentModalOpen}
-        invoice={selectedInvoice}
-        onSuccess={handlePaymentSuccess}
-      />
     </div>
   );
 };
