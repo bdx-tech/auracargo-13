@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -79,17 +78,6 @@ const CreateShipment = () => {
     setIsProcessing(true);
     
     try {
-      // Verify payment
-      const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-payment', {
-        body: { reference: reference.reference }
-      });
-      
-      if (verifyError) throw new Error(verifyError.message);
-      
-      if (!verifyData.status || verifyData.data.status !== 'success') {
-        throw new Error('Payment verification failed');
-      }
-      
       // Generate tracking number
       const trackingNumber = `AUR${Math.floor(100000 + Math.random() * 900000)}`;
       
@@ -114,21 +102,20 @@ const CreateShipment = () => {
       
       if (shipmentError) throw shipmentError;
       
-      // Create payment record
-      await supabase
-        .from('payments')
-        .insert([
-          {
-            amount: amount / 100, // Convert back to naira
-            payment_method: 'Paystack',
-            status: 'Completed',
-            shipment_id: shipmentData[0].id,
-            user_id: user?.id,
-            transaction_id: reference.reference,
-            payment_provider: 'paystack',
-            payment_reference: reference.reference
-          }
-        ]);
+      // Verify payment and store it in database
+      const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-payment', {
+        body: { 
+          reference: reference.reference,
+          userId: user?.id,
+          shipmentId: shipmentData[0].id
+        }
+      });
+      
+      if (verifyError) throw new Error(verifyError.message);
+      
+      if (!verifyData.status || verifyData.data.status !== 'success') {
+        throw new Error('Payment verification failed');
+      }
       
       // Create notification
       await supabase
