@@ -13,7 +13,8 @@ serve(async (req) => {
   }
 
   try {
-    const PAYSTACK_SECRET_KEY = Deno.env.get('PAYSTACK_SECRET_KEY');
+    // Use the updated Paystack Secret Key
+    const PAYSTACK_SECRET_KEY = Deno.env.get('PAYSTACK_SECRET_KEY') || 'sk_test_68592b76621463d836a152cca59b89e2312ac1d2';
     
     if (!PAYSTACK_SECRET_KEY) {
       throw new Error('PAYSTACK_SECRET_KEY is not set');
@@ -24,6 +25,8 @@ serve(async (req) => {
     if (!reference) {
       throw new Error('Payment reference is required');
     }
+
+    console.log('Verifying payment reference:', reference);
 
     // Verify payment with Paystack
     const verifyResponse = await fetch(

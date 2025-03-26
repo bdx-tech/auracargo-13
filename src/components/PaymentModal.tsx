@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -27,12 +26,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const [isVerifying, setIsVerifying] = useState(false);
   const [isPaid, setIsPaid] = useState(false);
   
-  // Configure Paystack with a valid public key
   const config = {
     reference: `pay_${new Date().getTime()}`,
     email: email,
-    amount: amount * 100, // Paystack amount is in kobo (100 kobo = 1 Naira)
-    publicKey: "pk_test_d2f752acbc9cced47af5e809404ae3de6b9add29", // Valid Paystack test public key
+    amount: amount * 100,
+    publicKey: "pk_test_a072d7eb86e3b66f02782571ccfb4e2d6ec70e61",
   };
   
   const initializePayment = usePaystackPayment(config);
@@ -40,7 +38,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const handlePaymentInitialize = () => {
     setIsProcessing(true);
     
-    // Initialize Paystack payment
     initializePayment({
       onSuccess: (reference) => handlePaymentSuccess(reference),
       onClose: () => {
@@ -58,7 +55,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     try {
       setIsVerifying(true);
       
-      // Call Supabase Edge Function to verify the payment
       const { data, error } = await supabase.functions.invoke('verify-payment', {
         body: { reference: reference.reference }
       });
@@ -75,7 +71,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           description: "Your payment has been verified successfully.",
         });
         
-        // Wait a moment to show the success state before closing
         setTimeout(() => {
           onOpenChange(false);
           onSuccess();
@@ -98,7 +93,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={(newOpen) => {
-      // Prevent closing if payment is in progress
       if (isProcessing && newOpen === false) return;
       onOpenChange(newOpen);
     }}>
