@@ -9,11 +9,13 @@ import ShipmentsManagement from "./admin/ShipmentsManagement";
 import SystemSettings from "./admin/SystemSettings";
 import SupportManagement from "./admin/SupportManagement";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     // Extra safety check - if somehow an unauthorized user gets to this page, redirect them
@@ -32,7 +34,7 @@ const AdminDashboard = () => {
           <AdminSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
           
           {/* Main Content */}
-          <div className="flex-1">
+          <div className="flex-1 mt-6 md:mt-0">
             {activeTab === "overview" && <AdminOverview />}
             {activeTab === "users" && <UsersPage />}
             {activeTab === "shipments" && <ShipmentsManagement />}

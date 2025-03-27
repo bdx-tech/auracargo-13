@@ -12,8 +12,12 @@ import TestimonialsSection from "@/components/TestimonialsSection";
 import UpdatesSection from "@/components/UpdatesSection";
 import ContactForm from "@/components/ContactForm";
 import Footer from "@/components/Footer";
+import ChatBubble from "@/components/ChatBubble";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
+  const { user } = useAuth();
+  
   useEffect(() => {
     // Initialize scroll animations
     const handleScroll = () => {
@@ -53,6 +57,9 @@ const Index = () => {
       <UpdatesSection />
       <ContactForm />
       <Footer />
+      
+      {/* Chat Bubble Widget (only shown when user is logged in) */}
+      {user && <ChatBubble />}
     </div>
   );
 };

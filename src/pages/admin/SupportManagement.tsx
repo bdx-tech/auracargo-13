@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -21,12 +20,14 @@ import {
   Search,
   Loader2,
   User,
-  MessageSquare
+  MessageSquare,
+  ArrowLeft
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { format, formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const SupportManagement = () => {
   const [conversations, setConversations] = useState<any[]>([]);
@@ -42,12 +43,12 @@ const SupportManagement = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [showConversationList, setShowConversationList] = useState(true);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
-    // Fetch all conversations
     fetchConversations();
 
-    // Set up real-time listener for conversations
     const conversationsChannel = supabase
       .channel('admin-support-conversations')
       .on('postgres_changes', 
@@ -65,7 +66,6 @@ const SupportManagement = () => {
   }, []);
 
   useEffect(() => {
-    // Apply filters whenever conversations or filters change
     applyFilters();
   }, [conversations, searchQuery, statusFilter]);
 
@@ -73,7 +73,6 @@ const SupportManagement = () => {
     if (selectedConversation) {
       fetchMessages(selectedConversation.id);
 
-      // Set up real-time listener for messages
       const messagesChannel = supabase
         .channel(`admin-messages-${selectedConversation.id}`)
         .on('postgres_changes', 
@@ -120,7 +119,6 @@ const SupportManagement = () => {
       
       setConversations(data || []);
       
-      // If there's at least one conversation and none is selected, select the first one
       if (data?.length && !selectedConversation) {
         setSelectedConversation(data[0]);
       }
@@ -157,7 +155,6 @@ const SupportManagement = () => {
       
       setMessages(data || []);
       
-      // Mark messages as read
       markMessagesAsRead(conversationId);
     } catch (error: any) {
       toast({
@@ -193,7 +190,6 @@ const SupportManagement = () => {
     try {
       setIsSendingMessage(true);
       
-      // Send the message
       const { error } = await supabase
         .from('support_messages')
         .insert({
@@ -205,7 +201,6 @@ const SupportManagement = () => {
         
       if (error) throw error;
       
-      // Update the conversation's updated_at timestamp
       await supabase
         .from('support_conversations')
         .update({ updated_at: new Date().toISOString() })
@@ -281,10 +276,20 @@ const SupportManagement = () => {
     }
   };
 
+  const handleSelectConversation = (conversation: any) => {
+    setSelectedConversation(conversation);
+    if (isMobile) {
+      setShowConversationList(false);
+    }
+  };
+
+  const handleBackToList = () => {
+    setShowConversationList(true);
+  };
+
   const applyFilters = () => {
     let filtered = [...conversations];
     
-    // Apply search query filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -295,7 +300,6 @@ const SupportManagement = () => {
       );
     }
     
-    // Apply status filter
     if (statusFilter !== 'all') {
       filtered = filtered.filter(conversation => conversation.status === statusFilter);
     }
@@ -313,240 +317,256 @@ const SupportManagement = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1 h-full">
-        {/* Conversations List */}
-        <div className="md:col-span-1">
-          <Card className="h-full flex flex-col">
-            <CardHeader className="pb-3">
-              <CardTitle>Tickets</CardTitle>
-              <div className="relative mt-2">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Search tickets..." 
-                  className="pl-8"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              <Tabs 
-                defaultValue="all" 
-                value={statusFilter}
-                onValueChange={setStatusFilter} 
-                className="mt-2"
-              >
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="all">All</TabsTrigger>
-                  <TabsTrigger value="open">Open</TabsTrigger>
-                  <TabsTrigger value="closed">Closed</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </CardHeader>
-            <CardContent className="flex-1 overflow-hidden">
-              {isLoadingConversations ? (
-                <div className="flex justify-center items-center h-full">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        {(!isMobile || (isMobile && showConversationList)) && (
+          <div className="md:col-span-1">
+            <Card className="h-full flex flex-col">
+              <CardHeader className="pb-3">
+                <CardTitle>Tickets</CardTitle>
+                <div className="relative mt-2">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="Search tickets..." 
+                    className="pl-8"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
                 </div>
-              ) : filteredConversations.length > 0 ? (
-                <ScrollArea className="h-[calc(100vh-350px)]">
-                  <div className="space-y-2 pr-3">
-                    {filteredConversations.map((conversation) => {
-                      const userName = `${conversation.user?.first_name || ''} ${conversation.user?.last_name || ''}`.trim();
-                      return (
-                        <div 
-                          key={conversation.id}
-                          onClick={() => setSelectedConversation(conversation)}
-                          className={`p-3 rounded-md cursor-pointer transition-colors ${
-                            selectedConversation?.id === conversation.id 
-                              ? 'bg-primary/10' 
-                              : 'hover:bg-muted'
-                          }`}
-                        >
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1 truncate">
-                              <div className="font-medium truncate">{conversation.title}</div>
-                              <div className="text-sm text-muted-foreground flex items-center gap-1">
-                                <User className="h-3 w-3" />
-                                {userName || conversation.user?.email || 'Unknown user'}
-                              </div>
-                            </div>
-                            <Badge variant={conversation.status === 'open' ? "default" : "secondary"}>
-                              {conversation.status}
-                            </Badge>
-                          </div>
-                          <div className="flex justify-between items-center mt-2 text-xs text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <MessageSquare className="h-3 w-3" />
-                              {conversation.message_count[0].count}
-                            </div>
-                            <div>
-                              {formatDistanceToNow(new Date(conversation.updated_at), { addSuffix: true })}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
+                <Tabs 
+                  defaultValue="all" 
+                  value={statusFilter}
+                  onValueChange={setStatusFilter} 
+                  className="mt-2"
+                >
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="all">All</TabsTrigger>
+                    <TabsTrigger value="open">Open</TabsTrigger>
+                    <TabsTrigger value="closed">Closed</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </CardHeader>
+              <CardContent className="flex-1 overflow-hidden">
+                {isLoadingConversations ? (
+                  <div className="flex justify-center items-center h-full">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   </div>
-                </ScrollArea>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-center p-4">
-                  <AlertCircle className="h-10 w-10 text-muted-foreground mb-2" />
-                  <p className="text-muted-foreground">No tickets found</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-        
-        {/* Chat Area */}
-        <div className="md:col-span-2">
-          <Card className="h-full flex flex-col">
-            {selectedConversation ? (
-              <>
-                <CardHeader className="border-b pb-3">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle>{selectedConversation.title}</CardTitle>
-                      <CardDescription className="flex items-center gap-2 mt-1">
-                        <span>Ticket #{selectedConversation.id.split('-')[0]}</span>
-                        <span>•</span>
-                        <span className="flex items-center gap-1">
-                          {selectedConversation.status === 'open' ? (
-                            <>
-                              <Clock className="h-3 w-3 text-orange-500" /> Open
-                            </>
-                          ) : (
-                            <>
-                              <CheckCircle className="h-3 w-3 text-green-500" /> Closed
-                            </>
-                          )}
-                        </span>
-                      </CardDescription>
-                    </div>
-                    {selectedConversation.status === 'open' ? (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={closeConversation}
-                      >
-                        Close Ticket
-                      </Button>
-                    ) : (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={reopenConversation}
-                      >
-                        Reopen Ticket
-                      </Button>
-                    )}
-                  </div>
-                  <div className="mt-2 p-2 bg-muted rounded-md">
-                    <p className="text-sm font-medium">Customer Information</p>
-                    <div className="grid grid-cols-2 gap-2 mt-1 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Name:</span> {
-                          `${selectedConversation.user?.first_name || ''} ${selectedConversation.user?.last_name || ''}`.trim() || 'N/A'
-                        }
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Email:</span> {selectedConversation.user?.email || 'N/A'}
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Created:</span> {
-                          format(new Date(selectedConversation.created_at), 'MMM d, yyyy h:mm a')
-                        }
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Last Updated:</span> {
-                          format(new Date(selectedConversation.updated_at), 'MMM d, yyyy h:mm a')
-                        }
-                      </div>
-                    </div>
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="flex-1 overflow-hidden p-0">
-                  {isLoadingMessages ? (
-                    <div className="flex justify-center items-center h-full">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    </div>
-                  ) : (
-                    <ScrollArea className="h-[calc(100vh-430px)] p-4">
-                      {messages.length > 0 ? (
-                        <div className="space-y-4">
-                          {messages.map((message) => {
-                            const isAdmin = message.is_admin;
-                            const senderName = isAdmin 
-                              ? `Support Agent (${message.sender?.first_name || ''} ${message.sender?.last_name || ''})`
-                              : `${message.sender?.first_name || ''} ${message.sender?.last_name || ''}`;
-                              
-                            return (
-                              <div 
-                                key={message.id} 
-                                className={`flex ${isAdmin ? 'justify-end' : 'justify-start'}`}
-                              >
-                                <div 
-                                  className={`max-w-[80%] rounded-lg p-3 ${
-                                    isAdmin 
-                                      ? 'bg-primary text-primary-foreground' 
-                                      : 'bg-muted'
-                                  }`}
-                                >
-                                  <div className="text-sm font-medium mb-1">
-                                    {senderName}
-                                  </div>
-                                  <div className="break-words">{message.content}</div>
-                                  <div className="text-xs mt-1 opacity-70">
-                                    {format(new Date(message.created_at), 'MMM d, h:mm a')}
-                                  </div>
+                ) : filteredConversations.length > 0 ? (
+                  <ScrollArea className="h-[calc(100vh-350px)]">
+                    <div className="space-y-2 pr-3">
+                      {filteredConversations.map((conversation) => {
+                        const userName = `${conversation.user?.first_name || ''} ${conversation.user?.last_name || ''}`.trim();
+                        return (
+                          <div 
+                            key={conversation.id}
+                            onClick={() => handleSelectConversation(conversation)}
+                            className={`p-3 rounded-md cursor-pointer transition-colors ${
+                              selectedConversation?.id === conversation.id 
+                                ? 'bg-primary/10' 
+                                : 'hover:bg-muted'
+                            }`}
+                          >
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1 truncate">
+                                <div className="font-medium truncate">{conversation.title}</div>
+                                <div className="text-sm text-muted-foreground flex items-center gap-1">
+                                  <User className="h-3 w-3" />
+                                  {userName || conversation.user?.email || 'Unknown user'}
                                 </div>
                               </div>
-                            );
-                          })}
-                          <div ref={messagesEndRef} />
+                              <Badge variant={conversation.status === 'open' ? "default" : "secondary"}>
+                                {conversation.status}
+                              </Badge>
+                            </div>
+                            <div className="flex justify-between items-center mt-2 text-xs text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <MessageSquare className="h-3 w-3" />
+                                {conversation.message_count[0].count}
+                              </div>
+                              <div>
+                                {formatDistanceToNow(new Date(conversation.updated_at), { addSuffix: true })}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                    <AlertCircle className="h-10 w-10 text-muted-foreground mb-2" />
+                    <p className="text-muted-foreground">No tickets found</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+        
+        {(!isMobile || (isMobile && !showConversationList)) && (
+          <div className="md:col-span-2">
+            <Card className="h-full flex flex-col">
+              {selectedConversation ? (
+                <>
+                  <CardHeader className="border-b pb-3">
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center gap-2">
+                        {isMobile && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={handleBackToList}
+                            className="mr-1"
+                          >
+                            <ArrowLeft className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <div>
+                          <CardTitle>{selectedConversation.title}</CardTitle>
+                          <CardDescription className="flex items-center gap-2 mt-1">
+                            <span>Ticket #{selectedConversation.id.split('-')[0]}</span>
+                            <span>•</span>
+                            <span className="flex items-center gap-1">
+                              {selectedConversation.status === 'open' ? (
+                                <>
+                                  <Clock className="h-3 w-3 text-orange-500" /> Open
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle className="h-3 w-3 text-green-500" /> Closed
+                                </>
+                              )}
+                            </span>
+                          </CardDescription>
                         </div>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center h-full text-center p-4">
-                          <MessageSquare className="h-10 w-10 text-muted-foreground mb-2" />
-                          <p className="text-muted-foreground">No messages in this conversation</p>
+                      </div>
+                      <div>
+                        {selectedConversation.status === 'open' ? (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={closeConversation}
+                          >
+                            Close Ticket
+                          </Button>
+                        ) : (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={reopenConversation}
+                          >
+                            Reopen Ticket
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="mt-2 p-2 bg-muted rounded-md">
+                      <p className="text-sm font-medium">Customer Information</p>
+                      <div className="grid grid-cols-2 gap-2 mt-1 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Name:</span> {
+                            `${selectedConversation.user?.first_name || ''} ${selectedConversation.user?.last_name || ''}`.trim() || 'N/A'
+                          }
                         </div>
-                      )}
-                    </ScrollArea>
-                  )}
-                </CardContent>
-                
-                <CardFooter className="border-t p-4">
-                  <form onSubmit={sendMessage} className="w-full flex gap-2">
-                    <Input
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      placeholder="Type your response..."
-                      disabled={isSendingMessage || selectedConversation.status === 'closed'}
-                      className="flex-1"
-                    />
-                    <Button 
-                      type="submit" 
-                      disabled={!newMessage.trim() || isSendingMessage || selectedConversation.status === 'closed'}
-                    >
-                      {isSendingMessage ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Send className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </form>
-                </CardFooter>
-              </>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                <MessageSquare className="h-16 w-16 text-muted-foreground mb-4" />
-                <h3 className="text-xl font-semibold mb-2">No Conversation Selected</h3>
-                <p className="text-muted-foreground max-w-md">
-                  Select a conversation from the list to view messages and respond to customer inquiries.
-                </p>
-              </div>
-            )}
-          </Card>
-        </div>
+                        <div>
+                          <span className="text-muted-foreground">Email:</span> {selectedConversation.user?.email || 'N/A'}
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Created:</span> {
+                            format(new Date(selectedConversation.created_at), 'MMM d, yyyy h:mm a')
+                          }
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Last Updated:</span> {
+                            format(new Date(selectedConversation.updated_at), 'MMM d, yyyy h:mm a')
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  
+                  <CardContent className="flex-1 overflow-hidden p-0">
+                    {isLoadingMessages ? (
+                      <div className="flex justify-center items-center h-full">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      </div>
+                    ) : (
+                      <ScrollArea className="h-[calc(100vh-430px)] p-4">
+                        {messages.length > 0 ? (
+                          <div className="space-y-4">
+                            {messages.map((message) => {
+                              const isAdmin = message.is_admin;
+                              const senderName = isAdmin 
+                                ? `Support Agent (${message.sender?.first_name || ''} ${message.sender?.last_name || ''})`
+                                : `${message.sender?.first_name || ''} ${message.sender?.last_name || ''}`;
+                                
+                              return (
+                                <div 
+                                  key={message.id} 
+                                  className={`flex ${isAdmin ? 'justify-end' : 'justify-start'}`}
+                                >
+                                  <div 
+                                    className={`max-w-[80%] rounded-lg p-3 ${
+                                      isAdmin 
+                                        ? 'bg-primary text-primary-foreground' 
+                                        : 'bg-muted'
+                                    }`}
+                                  >
+                                    <div className="text-sm font-medium mb-1">
+                                      {senderName}
+                                    </div>
+                                    <div className="break-words">{message.content}</div>
+                                    <div className="text-xs mt-1 opacity-70">
+                                      {format(new Date(message.created_at), 'MMM d, h:mm a')}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                            <div ref={messagesEndRef} />
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                            <MessageSquare className="h-10 w-10 text-muted-foreground mb-2" />
+                            <p className="text-muted-foreground">No messages in this conversation</p>
+                          </div>
+                        )}
+                      </ScrollArea>
+                    )}
+                  </CardContent>
+                  
+                  <CardFooter className="border-t p-4">
+                    <form onSubmit={sendMessage} className="w-full flex gap-2">
+                      <Input
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        placeholder="Type your response..."
+                        disabled={isSendingMessage || selectedConversation.status === 'closed'}
+                        className="flex-1"
+                      />
+                      <Button 
+                        type="submit" 
+                        disabled={!newMessage.trim() || isSendingMessage || selectedConversation.status === 'closed'}
+                      >
+                        {isSendingMessage ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Send className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </form>
+                  </CardFooter>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                  <MessageSquare className="h-16 w-16 text-muted-foreground mb-4" />
+                  <h3 className="text-xl font-semibold mb-2">No Conversation Selected</h3>
+                  <p className="text-muted-foreground max-w-md">
+                    Select a conversation from the list to view messages and respond to customer inquiries.
+                  </p>
+                </div>
+              )}
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );
