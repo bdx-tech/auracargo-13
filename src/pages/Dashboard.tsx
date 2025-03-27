@@ -147,7 +147,7 @@ const Dashboard = () => {
   }, [user, toast]);
 
   if (loading) {
-    return <LoadingSpinner message={loadingTimeout ? "Still loading data... This is taking longer than expected." : undefined} />;
+    return <LoadingSpinner />;
   }
 
   return (

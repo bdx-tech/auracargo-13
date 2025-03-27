@@ -44,7 +44,7 @@ const AdminDashboard = () => {
   }, [user, isAdmin, navigate]);
 
   if (isLoading) {
-    return <LoadingSpinner message={loadingTimeout ? "Still loading admin data... This is taking longer than expected." : undefined} />;
+    return <LoadingSpinner />;
   }
 
   return (
