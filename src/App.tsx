@@ -16,6 +16,7 @@ import Dashboard from "./pages/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import TrackingPage from "./pages/TrackingPage";
 import CreateShipment from "./pages/CreateShipment";
+import SupportChat from "./pages/SupportChat";
 import NotFound from "./pages/NotFound";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
@@ -60,6 +61,7 @@ const App = () => {
                 <Route path="/tracking/:trackingNumber" element={<TrackingPage />} />
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/create-shipment" element={<ProtectedRoute><CreateShipment /></ProtectedRoute>} />
+                <Route path="/support" element={<ProtectedRoute><SupportChat /></ProtectedRoute>} />
                 <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/terms" element={<Terms />} />

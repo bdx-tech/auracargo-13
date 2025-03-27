@@ -6,9 +6,11 @@ import {
   Package, 
   Settings, 
   LogOut, 
-  User
+  User,
+  HeadphonesIcon
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 interface DashboardSidebarProps {
   activeTab: string;
@@ -22,6 +24,8 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   profile
 }) => {
   const { signOut } = useAuth();
+  const navigate = useNavigate();
+  
   const menuItems = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
     { id: "shipments", label: "Shipments", icon: Package },
@@ -57,6 +61,15 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
             {item.label}
           </Button>
         ))}
+        
+        <Button
+          variant="ghost"
+          className="w-full justify-start"
+          onClick={() => navigate('/support')}
+        >
+          <HeadphonesIcon className="mr-2 h-4 w-4" />
+          Support
+        </Button>
       </div>
       
       <div className="pt-6 mt-6 border-t border-gray-100">

@@ -7,6 +7,7 @@ import AdminOverview from "./admin/Overview";
 import UsersPage from "./admin/Users";
 import ShipmentsManagement from "./admin/ShipmentsManagement";
 import SystemSettings from "./admin/SystemSettings";
+import SupportManagement from "./admin/SupportManagement";
 import { useAuth } from "@/contexts/AuthContext";
 
 const AdminDashboard = () => {
@@ -36,6 +37,7 @@ const AdminDashboard = () => {
             {activeTab === "users" && <UsersPage />}
             {activeTab === "shipments" && <ShipmentsManagement />}
             {activeTab === "settings" && <SystemSettings />}
+            {activeTab === "support" && <SupportManagement />}
           </div>
         </div>
       </div>
