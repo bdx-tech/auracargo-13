@@ -48,13 +48,13 @@ const AppContent = () => {
     // Reduce loading time to improve UX
     const timer = setTimeout(() => {
       setLoading(false);
-    }, 500); // Reduced from 800ms to 500ms for faster initial rendering
+    }, 800); // Reduced from 2000ms to 800ms
 
     return () => clearTimeout(timer);
   }, []);
 
   if (loading) {
-    return <LoadingSpinner />;
+    return <LoadingSpinner message="Initializing application..." />;
   }
 
   return (
