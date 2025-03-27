@@ -27,7 +27,16 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 
-const queryClient = new QueryClient();
+// Configure React Query with sensible defaults
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1, // Only retry failed queries once
+      staleTime: 30000, // Consider data fresh for 30 seconds
+      refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    },
+  },
+});
 
 // Wrapper component to conditionally show ChatBubble
 const AppContent = () => {
@@ -35,10 +44,10 @@ const AppContent = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading time
+    // Reduce loading time to improve UX
     const timer = setTimeout(() => {
       setLoading(false);
-    }, 2000);
+    }, 800); // Reduced from 2000ms to 800ms
 
     return () => clearTimeout(timer);
   }, []);

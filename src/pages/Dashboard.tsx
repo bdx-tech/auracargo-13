@@ -8,6 +8,7 @@ import SettingsPage from "./dashboard/Settings";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -17,36 +18,53 @@ const Dashboard = () => {
     notifications: []
   });
   const [loading, setLoading] = useState(true);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
+    // Set a timeout to show a message if loading takes too long
+    const timeoutId = setTimeout(() => {
+      setLoadingTimeout(true);
+    }, 5000);
+
     const fetchDashboardData = async () => {
       if (!user) return;
       
       setLoading(true);
       
       try {
-        // Fetch shipments
-        const { data: shipments, error: shipmentsError } = await supabase
+        // Fetch shipments with a timeout
+        const shipmentsPromise = supabase
           .from('shipments')
           .select('*')
           .eq('user_id', user.id);
           
-        if (shipmentsError) throw shipmentsError;
-        
-        // Fetch notifications
-        const { data: notifications, error: notificationsError } = await supabase
+        // Fetch notifications with a timeout
+        const notificationsPromise = supabase
           .from('notifications')
           .select('*')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
           
-        if (notificationsError) throw notificationsError;
+        // Use Promise.allSettled to handle both requests even if one fails
+        const [shipmentsResult, notificationsResult] = await Promise.allSettled([
+          shipmentsPromise,
+          notificationsPromise
+        ]);
         
-        setDashboardData({
-          shipments: shipments || [],
-          notifications: notifications || []
-        });
+        // Process shipments result
+        if (shipmentsResult.status === 'fulfilled') {
+          const { data: shipments, error: shipmentsError } = shipmentsResult.value;
+          if (shipmentsError) throw shipmentsError;
+          setDashboardData(prev => ({ ...prev, shipments: shipments || [] }));
+        }
+        
+        // Process notifications result
+        if (notificationsResult.status === 'fulfilled') {
+          const { data: notifications, error: notificationsError } = notificationsResult.value;
+          if (notificationsError) throw notificationsError;
+          setDashboardData(prev => ({ ...prev, notifications: notifications || [] }));
+        }
       } catch (error: any) {
         console.error('Error fetching dashboard data:', error);
         toast({
@@ -56,6 +74,7 @@ const Dashboard = () => {
         });
       } finally {
         setLoading(false);
+        clearTimeout(timeoutId);
       }
     };
     
@@ -123,8 +142,13 @@ const Dashboard = () => {
     return () => {
       supabase.removeChannel(shipmentChannel);
       supabase.removeChannel(notificationsChannel);
+      clearTimeout(timeoutId);
     };
   }, [user, toast]);
+
+  if (loading) {
+    return <LoadingSpinner message={loadingTimeout ? "Still loading data... This is taking longer than expected." : undefined} />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
