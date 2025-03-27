@@ -34,6 +34,7 @@ const queryClient = new QueryClient({
       retry: 1, // Only retry failed queries once
       staleTime: 30000, // Consider data fresh for 30 seconds
       refetchOnWindowFocus: false, // Don't refetch when window regains focus
+      gcTime: 60000, // Keep unused data in cache for 1 minute
     },
   },
 });
@@ -53,7 +54,7 @@ const AppContent = () => {
   }, []);
 
   if (loading) {
-    return <LoadingSpinner />;
+    return <LoadingSpinner message="Initializing application..." />;
   }
 
   return (

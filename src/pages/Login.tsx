@@ -1,30 +1,65 @@
 
-import { useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, Navigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Navigation from "@/components/Navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { Truck } from "lucide-react";
+import { Truck, Loader } from "lucide-react";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn, user } = useAuth();
+  const [loginAttemptTime, setLoginAttemptTime] = useState<number | null>(null);
+  const { signIn, user, isLoading: authLoading } = useAuth();
+  const location = useLocation();
+
+  // Clear error when inputs change
+  useEffect(() => {
+    if (error) setError("");
+  }, [email, password]);
+
+  // Track long-running login attempts
+  useEffect(() => {
+    if (isLoading && !loginAttemptTime) {
+      setLoginAttemptTime(Date.now());
+    }
+
+    if (!isLoading) {
+      setLoginAttemptTime(null);
+    }
+
+    // If login is taking too long, show a helpful message
+    let timeoutId: number;
+    if (isLoading && loginAttemptTime) {
+      timeoutId = window.setTimeout(() => {
+        if (isLoading) {
+          setError("Login is taking longer than expected. Please try again.");
+          setIsLoading(false);
+        }
+      }, 10000); // 10 second timeout
+    }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [isLoading, loginAttemptTime]);
 
   // If user is already logged in, redirect to dashboard
   if (user) {
-    return <Navigate to="/dashboard" />;
+    const from = location.state?.from?.pathname || "/dashboard";
+    return <Navigate to={from} />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
+    console.log("Login attempt started");
     
     if (!email || !password) {
       setError("Please enter both email and password");
@@ -34,7 +69,9 @@ const Login = () => {
     
     try {
       await signIn(email, password);
+      console.log("Login successful");
     } catch (error: any) {
+      console.error("Login error:", error.message);
       setError(error.message);
     } finally {
       setIsLoading(false);
@@ -61,6 +98,12 @@ const Login = () => {
             </Alert>
           )}
           
+          {authLoading && (
+            <Alert className="mb-4 bg-blue-50 text-blue-800 border-blue-200">
+              <AlertDescription>Initializing authentication...</AlertDescription>
+            </Alert>
+          )}
+          
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -70,6 +113,7 @@ const Login = () => {
                 placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoading}
               />
             </div>
             
@@ -86,15 +130,21 @@ const Login = () => {
                 placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={isLoading}
               />
             </div>
             
             <Button 
               type="submit" 
               className="w-full bg-kargon-red hover:bg-kargon-red/90 text-white"
-              disabled={isLoading}
+              disabled={isLoading || authLoading}
             >
-              {isLoading ? "LOGGING IN..." : "LOGIN"}
+              {isLoading ? (
+                <span className="flex items-center gap-2">
+                  <Loader className="h-4 w-4 animate-spin" />
+                  LOGGING IN...
+                </span>
+              ) : "LOGIN"}
             </Button>
             
             <div className="text-center mt-4">
