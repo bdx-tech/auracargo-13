@@ -12,7 +12,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const location = useLocation();
 
   if (isLoading) {
-    return <LoadingSpinner />;
+    return <LoadingSpinner message="Verifying your credentials..." />;
   }
 
   if (!user) {
