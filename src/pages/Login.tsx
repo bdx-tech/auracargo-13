@@ -7,39 +7,18 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Navigation from "@/components/Navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { Truck, Loader2 } from "lucide-react";
+import { Truck } from "lucide-react";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn, user, isLoading: authLoading } = useAuth();
+  const { signIn, user } = useAuth();
 
   // If user is already logged in, redirect to dashboard
   if (user) {
     return <Navigate to="/dashboard" />;
-  }
-
-  // Show inline loader instead of full-page loader during auth process
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Navigation />
-        
-        <div className="flex-grow flex items-center justify-center py-20">
-          <div className="relative bg-white/90 backdrop-blur-sm shadow-lg rounded-lg p-8 w-full max-w-md border border-gray-200">
-            <div className="flex flex-col items-center justify-center py-6">
-              <Loader2 className="h-12 w-12 text-kargon-red animate-spin mb-4" />
-              <h2 className="text-xl font-medium">Authenticating...</h2>
-              <p className="text-gray-500 mt-2 text-center">
-                Please wait while we log you in to your account
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -91,7 +70,6 @@ const Login = () => {
                 placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                disabled={isLoading}
               />
             </div>
             
@@ -108,7 +86,6 @@ const Login = () => {
                 placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                disabled={isLoading}
               />
             </div>
             
@@ -117,12 +94,7 @@ const Login = () => {
               className="w-full bg-kargon-red hover:bg-kargon-red/90 text-white"
               disabled={isLoading}
             >
-              {isLoading ? (
-                <div className="flex items-center justify-center">
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  LOGGING IN...
-                </div>
-              ) : "LOGIN"}
+              {isLoading ? "LOGGING IN..." : "LOGIN"}
             </Button>
             
             <div className="text-center mt-4">

@@ -40,7 +40,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [authInitialized, setAuthInitialized] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -48,81 +47,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isAdmin = profile?.role === 'admin';
   const isStaff = profile?.role === 'staff';
 
-  // Fetch user profile with timeout and caching
+  // Fetch user profile
   const fetchProfile = async (userId: string) => {
     try {
-      console.log("Fetching profile for user:", userId);
-      
-      // Set a timeout for the profile fetch
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Profile fetch timed out")), 5000);
-      });
-      
-      const fetchPromise = supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
       
-      // Race between the fetch and timeout
-      const { data, error } = await Promise.race([
-        fetchPromise,
-        timeoutPromise.then(() => { throw new Error("Profile fetch timed out"); })
-      ]) as any;
-      
-      if (error) {
-        console.error('Error fetching profile:', error.message);
-        return null;
-      }
-      
-      if (data) {
-        console.log("Profile fetched successfully:", data);
-        setProfile(data);
-        return data;
-      }
+      if (error) throw error;
+      if (data) setProfile(data);
     } catch (error: any) {
-      console.error('Error in fetchProfile:', error.message);
-      // Don't throw - just return null so auth flow can continue
-      return null;
+      console.error('Error fetching profile:', error.message);
     }
   };
 
   useEffect(() => {
-    console.log("AuthProvider: Setting up auth state listener");
-    
-    // Set up a timeout to finish the loading state, regardless of auth state
-    const loadingTimeout = setTimeout(() => {
-      if (isLoading) {
-        console.log("Auth loading timeout reached, setting loading to false");
-        setIsLoading(false);
-      }
-    }, 5000);
-    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log("Auth state changed:", event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Use setTimeout to avoid potential Supabase deadlocks
-          setTimeout(async () => {
-            await fetchProfile(session.user.id);
-          }, 0);
+          await fetchProfile(session.user.id);
         } else {
           setProfile(null);
         }
         
-        if (authInitialized) {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       }
     );
 
     // THEN check for existing session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      console.log("Initial session check:", session?.user?.id);
       setSession(session);
       setUser(session?.user ?? null);
       
@@ -130,53 +89,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await fetchProfile(session.user.id);
       }
       
-      setAuthInitialized(true);
       setIsLoading(false);
     });
 
-    return () => {
-      subscription.unsubscribe();
-      clearTimeout(loadingTimeout);
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   // Sign in with email and password
   const signIn = async (email: string, password: string) => {
     try {
-      console.log("Attempting sign in for:", email);
-      setIsLoading(true);
-      
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) throw error;
-      
       navigate('/dashboard');
       toast({
         title: "Login successful",
         description: "Welcome back!",
       });
     } catch (error: any) {
-      console.error("Login error:", error.message);
       toast({
         variant: "destructive",
         title: "Login failed",
         description: error.message,
       });
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
 
   // Sign up with email and password
   const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
     try {
-      console.log("Attempting sign up for:", email);
-      setIsLoading(true);
-      
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -196,37 +141,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       navigate('/dashboard');
     } catch (error: any) {
-      console.error("Registration error:", error.message);
       toast({
         variant: "destructive",
         title: "Registration failed",
         description: error.message,
       });
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
 
   // Sign out
   const signOut = async () => {
     try {
-      console.log("Signing out user");
-      setIsLoading(true);
       await supabase.auth.signOut();
       navigate('/');
       toast({
         title: "Logged out successfully",
       });
     } catch (error: any) {
-      console.error("Logout error:", error.message);
       toast({
         variant: "destructive",
         title: "Error signing out",
         description: error.message,
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 

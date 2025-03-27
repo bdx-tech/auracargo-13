@@ -27,29 +27,13 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 
-// Configure React Query with optimized defaults
+// Configure React Query with sensible defaults
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1, // Only retry failed queries once
-      staleTime: 60000, // Consider data fresh for 60 seconds (increased from 30s)
+      staleTime: 30000, // Consider data fresh for 30 seconds
       refetchOnWindowFocus: false, // Don't refetch when window regains focus
-      refetchOnMount: false, // Don't automatically refetch on component mount
-      cacheTime: 300000, // Cache data for 5 minutes
-      // Add timeout to prevent hanging requests
-      queryFn: async ({ queryKey }) => {
-        console.log('Query executed for:', queryKey);
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
-        
-        try {
-          // This is just a placeholder as we don't know what the actual query function is
-          // The actual query function will be provided when useQuery is called
-          throw new Error('queryFn not implemented');
-        } finally {
-          clearTimeout(timeoutId);
-        }
-      },
     },
   },
 });
@@ -63,13 +47,13 @@ const AppContent = () => {
     // Reduce loading time to improve UX
     const timer = setTimeout(() => {
       setLoading(false);
-    }, 600); // Reduced from 800ms to 600ms for better UX
+    }, 800); // Reduced from 2000ms to 800ms
 
     return () => clearTimeout(timer);
   }, []);
 
   if (loading) {
-    return <LoadingSpinner message="Starting application..." />;
+    return <LoadingSpinner />;
   }
 
   return (
