@@ -1,21 +1,51 @@
 
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Truck } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 const HeroSection = () => {
+  const [imageLoaded, setImageLoaded] = useState(false);
+  
+  useEffect(() => {
+    // Preload the image
+    const img = new Image();
+    img.src = "/lovable-uploads/9bc9bb5d-5345-4122-9396-f69e5f467fc3.png";
+    img.onload = () => setImageLoaded(true);
+    
+    // Add a fallback in case image takes too long
+    const timer = setTimeout(() => {
+      if (!imageLoaded) setImageLoaded(true);
+    }, 800);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <section className="relative min-h-screen bg-kargon-blue flex items-center overflow-hidden">
       <div className="absolute inset-0 z-0">
+        {/* Low resolution placeholder that loads instantly */}
+        <div 
+          className="w-full h-full bg-cover bg-center bg-kargon-blue/70"
+          style={{ 
+            backgroundImage: "url('/lovable-uploads/9bc9bb5d-5345-4122-9396-f69e5f467fc3.png')", 
+            backgroundSize: "cover",
+            filter: !imageLoaded ? "blur(10px)" : "none",
+            transition: "filter 0.3s ease-in-out"
+          }}
+        />
+        
+        {/* Main image that loads with priority */}
         <img 
           src="/lovable-uploads/9bc9bb5d-5345-4122-9396-f69e5f467fc3.png" 
           alt="Cargo Port with Containers" 
-          className="w-full h-full object-cover"
+          className={`w-full h-full object-cover absolute inset-0 transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
           loading="eager" 
           fetchPriority="high"
           width="1280" 
           height="720"
           decoding="async"
+          onLoad={() => setImageLoaded(true)}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-kargon-dark/70 to-kargon-blue/30"></div>
       </div>
