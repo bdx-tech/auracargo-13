@@ -4,22 +4,52 @@ import { ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 
+// Define image paths
+const HERO_IMAGE_WEBP = "/hero-optimized.webp";
+const HERO_IMAGE_FALLBACK = "/lovable-uploads/9bc9bb5d-5345-4122-9396-f69e5f467fc3.png";
+
 const HeroSection = () => {
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [supportsWebP, setSupportsWebP] = useState(true); // Assume support initially
   
   useEffect(() => {
+    // Check WebP support
+    const checkWebPSupport = async () => {
+      const webpSupported = await testWebP();
+      setSupportsWebP(webpSupported);
+    };
+    
+    checkWebPSupport();
+    
+    // Determine which image to use
+    const imageSrc = supportsWebP ? HERO_IMAGE_WEBP : HERO_IMAGE_FALLBACK;
+    
     // Preload the image
     const img = new Image();
-    img.src = "/lovable-uploads/9bc9bb5d-5345-4122-9396-f69e5f467fc3.png";
+    img.src = imageSrc;
     img.onload = () => setImageLoaded(true);
     
     // Add a fallback in case image takes too long
     const timer = setTimeout(() => {
       if (!imageLoaded) setImageLoaded(true);
-    }, 800);
+    }, 500); // Reduced from 800ms to 500ms
     
     return () => clearTimeout(timer);
-  }, []);
+  }, [imageLoaded, supportsWebP]);
+
+  // Helper function to test WebP support
+  const testWebP = () => {
+    return new Promise(resolve => {
+      const webP = new Image();
+      webP.onload = webP.onerror = function () {
+        resolve(webP.height === 2);
+      };
+      webP.src = 'data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAACyAgCdASoCAAIALmk0mk0iIiIiIgBoSygABc6WWgAA/veff/0PP8bA//LwYAAA';
+    });
+  };
+
+  // Determine which image to use
+  const imageSrc = supportsWebP ? HERO_IMAGE_WEBP : HERO_IMAGE_FALLBACK;
 
   return (
     <section className="relative min-h-screen bg-kargon-blue flex items-center overflow-hidden">
@@ -28,7 +58,7 @@ const HeroSection = () => {
         <div 
           className="w-full h-full bg-cover bg-center bg-kargon-blue/70"
           style={{ 
-            backgroundImage: "url('/lovable-uploads/9bc9bb5d-5345-4122-9396-f69e5f467fc3.png')", 
+            backgroundImage: `url('${imageSrc}')`, 
             backgroundSize: "cover",
             filter: !imageLoaded ? "blur(10px)" : "none",
             transition: "filter 0.3s ease-in-out"
@@ -36,17 +66,22 @@ const HeroSection = () => {
         />
         
         {/* Main image that loads with priority */}
-        <img 
-          src="/lovable-uploads/9bc9bb5d-5345-4122-9396-f69e5f467fc3.png" 
-          alt="Cargo Port with Containers" 
-          className={`w-full h-full object-cover absolute inset-0 transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
-          loading="eager" 
-          fetchPriority="high"
-          width="1280" 
-          height="720"
-          decoding="async"
-          onLoad={() => setImageLoaded(true)}
-        />
+        <picture>
+          {supportsWebP && (
+            <source srcSet={HERO_IMAGE_WEBP} type="image/webp" />
+          )}
+          <img 
+            src={HERO_IMAGE_FALLBACK}
+            alt="Cargo Port with Containers" 
+            className={`w-full h-full object-cover absolute inset-0 transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+            loading="eager" 
+            fetchPriority="high"
+            width="1280" 
+            height="720"
+            decoding="async"
+            onLoad={() => setImageLoaded(true)}
+          />
+        </picture>
         <div className="absolute inset-0 bg-gradient-to-r from-kargon-dark/70 to-kargon-blue/30"></div>
       </div>
       
