@@ -1,10 +1,11 @@
+
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Package, MapPin, CheckCircle, Clock, AlertTriangle, WhatsApp, Phone } from "lucide-react";
+import { Loader2, Package, MapPin, CheckCircle, Clock, AlertTriangle, MessageSquare, Phone } from "lucide-react";
 import { format } from "date-fns";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
@@ -213,7 +214,7 @@ const TrackShipmentModal: React.FC<TrackShipmentModalProps> = ({
                       rel="noopener noreferrer"
                       className="flex items-center gap-1 text-sm text-green-600 hover:text-green-800"
                     >
-                      <WhatsApp className="h-4 w-4" />
+                      <MessageSquare className="h-4 w-4" />
                       <span>WhatsApp</span>
                     </a>
                   </div>

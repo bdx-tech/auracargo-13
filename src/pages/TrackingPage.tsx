@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
@@ -17,7 +16,7 @@ import {
   ArrowLeft,
   AlertTriangle,
   Phone,
-  WhatsApp
+  MessageSquare
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,7 +44,6 @@ const TrackingPage = () => {
     setError(null);
 
     try {
-      // Fetch shipment details
       const { data: shipmentData, error: shipmentError } = await supabase
         .from("shipments")
         .select("*")
@@ -60,7 +58,6 @@ const TrackingPage = () => {
 
       setShipment(shipmentData);
 
-      // Fetch tracking events
       const { data: eventsData, error: eventsError } = await supabase
         .from("tracking_events")
         .select("*")
@@ -157,7 +154,6 @@ const TrackingPage = () => {
                 </div>
               ) : shipment ? (
                 <div className="space-y-6">
-                  {/* Shipment Details Table */}
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -246,7 +242,6 @@ const TrackingPage = () => {
                     )}
                   </div>
                   
-                  {/* Contact Section */}
                   <div className="mt-10 pt-6 border-t border-gray-200">
                     <h3 className="text-lg font-semibold mb-4">Need Help With Your Shipment?</h3>
                     <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
@@ -265,7 +260,7 @@ const TrackingPage = () => {
                           rel="noopener noreferrer"
                           className="flex items-center gap-2 text-green-600 hover:text-green-800"
                         >
-                          <WhatsApp className="h-5 w-5" />
+                          <MessageSquare className="h-5 w-5" />
                           <span>WhatsApp</span>
                         </a>
                       </div>
