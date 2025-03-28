@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -8,8 +7,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import Navigation from "@/components/Navigation";
-import PaymentModal from "@/components/PaymentModal";
-import { Loader2, Package, ArrowLeft, CreditCard } from "lucide-react";
+import { Loader2, Package, ArrowLeft } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -51,8 +49,6 @@ const CreateShipment = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [shipmentData, setShipmentData] = useState<ShipmentFormValues | null>(null);
 
   const form = useForm<ShipmentFormValues>({
     resolver: zodResolver(shipmentFormSchema),
@@ -70,22 +66,9 @@ const CreateShipment = () => {
       quantity: undefined
     },
   });
-
-  // Calculate shipping fee based on weight (simplified example)
-  const calculateShippingFee = (weight: number): number => {
-    return weight * 1000; // ₦1000 per kg
-  };
-
-  const handleFormSubmit = (data: ShipmentFormValues) => {
-    // Store shipment data temporarily
-    setShipmentData(data);
-    
-    // Open payment modal
-    setShowPaymentModal(true);
-  };
   
-  const handlePaymentSuccess = async () => {
-    if (!user || !shipmentData) return;
+  const handleFormSubmit = async (data: ShipmentFormValues) => {
+    if (!user) return;
     
     setIsProcessing(true);
     
@@ -98,21 +81,19 @@ const CreateShipment = () => {
         .from('shipments')
         .insert([
           {
-            origin: shipmentData.origin,
-            destination: shipmentData.destination,
-            weight: shipmentData.weight,
-            status: 'Pending',
+            origin: data.origin,
+            destination: data.destination,
+            weight: data.weight,
             tracking_number: trackingNumber,
             user_id: user.id,
-            sender_name: shipmentData.sender_name,
-            sender_email: shipmentData.sender_email,
-            receiver_name: shipmentData.receiver_name,
-            receiver_email: shipmentData.receiver_email,
-            volume: shipmentData.volume,
-            term: shipmentData.term,
-            physical_weight: shipmentData.physical_weight,
-            quantity: shipmentData.quantity,
-            payment_status: 'paid'
+            sender_name: data.sender_name,
+            sender_email: data.sender_email,
+            receiver_name: data.receiver_name,
+            receiver_email: data.receiver_email,
+            volume: data.volume,
+            term: data.term,
+            physical_weight: data.physical_weight,
+            quantity: data.quantity
           }
         ])
         .select();
@@ -125,14 +106,14 @@ const CreateShipment = () => {
         .insert([
           {
             title: "New Shipment Created",
-            content: `Your shipment to ${shipmentData.destination} has been created with tracking number ${trackingNumber} and is pending approval.`,
+            content: `Your shipment to ${data.destination} has been created with tracking number ${trackingNumber} and is in transit.`,
             user_id: user.id
           }
         ]);
       
       toast({
         title: "Shipment Created!",
-        description: "Your shipment has been created and is pending approval.",
+        description: "Your shipment has been created and is in transit.",
       });
       
       // Navigate to dashboard
@@ -172,7 +153,7 @@ const CreateShipment = () => {
                 <CardTitle>Create New Shipment</CardTitle>
               </div>
               <CardDescription>
-                Enter shipment details to create a new shipment. Payment will be required to complete the process.
+                Enter shipment details to create a new shipment.
               </CardDescription>
             </CardHeader>
             
@@ -364,23 +345,6 @@ const CreateShipment = () => {
                     />
                   </div>
                   
-                  {form.watch("weight") && (
-                    <div className="border rounded-md p-4 bg-gray-50">
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                          <CreditCard className="h-5 w-5 text-primary" />
-                          <span className="font-medium">Estimated Shipping Cost</span>
-                        </div>
-                        <span className="font-bold text-lg">
-                          ₦{calculateShippingFee(form.watch("weight")).toFixed(2)}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-500 mt-2">
-                        This amount will be charged when you proceed to payment.
-                      </p>
-                    </div>
-                  )}
-                  
                   <div className="flex justify-between pt-4">
                     <Button
                       variant="outline"
@@ -399,8 +363,8 @@ const CreateShipment = () => {
                         </>
                       ) : (
                         <>
-                          <CreditCard className="mr-2 h-4 w-4" />
-                          Proceed to Payment
+                          <Package className="mr-2 h-4 w-4" />
+                          Create Shipment
                         </>
                       )}
                     </Button>
@@ -411,17 +375,6 @@ const CreateShipment = () => {
           </Card>
         </div>
       </div>
-      
-      {/* Payment Modal */}
-      {showPaymentModal && user && shipmentData && (
-        <PaymentModal
-          open={showPaymentModal}
-          onOpenChange={setShowPaymentModal}
-          onSuccess={handlePaymentSuccess}
-          amount={calculateShippingFee(shipmentData.weight)}
-          email={user.email || shipmentData.sender_email || ''}
-        />
-      )}
     </div>
   );
 };

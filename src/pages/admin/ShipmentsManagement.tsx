@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { 
   Table, 
@@ -117,13 +116,14 @@ const ShipmentsManagement = () => {
   );
 
   const getStatusVariant = (status: string) => {
-    switch (status) {
-      case "Delivered": return "default";
-      case "In Transit": return "secondary";
-      case "Processing": return "secondary";
-      case "Delayed": return "destructive";
-      case "Pending": return "outline";
-      case "Approved": return "secondary";
+    switch (status.toLowerCase()) {
+      case "delivered": return "default";
+      case "in transit": return "secondary";
+      case "on hold": return "warning";
+      case "processing": return "secondary";
+      case "delayed": return "destructive";
+      case "pending": return "outline";
+      case "approved": return "secondary";
       default: return "outline";
     }
   };
@@ -246,6 +246,58 @@ const ShipmentsManagement = () => {
     }
   };
 
+  const handleUpdateStatus = async (shipmentId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('shipments')
+        .update({ status: newStatus })
+        .eq('id', shipmentId);
+        
+      if (error) throw error;
+      
+      const eventType = newStatus.toLowerCase().replace(' ', '-');
+      
+      await supabase
+        .from('tracking_events')
+        .insert({
+          shipment_id: shipmentId,
+          event_type: eventType,
+          description: `Shipment status updated to ${newStatus}`,
+          location: 'Processing Center'
+        });
+      
+      const { data: shipmentData } = await supabase
+        .from('shipments')
+        .select('user_id, tracking_number')
+        .eq('id', shipmentId)
+        .single();
+        
+      if (shipmentData?.user_id) {
+        await supabase
+          .from('notifications')
+          .insert({
+            user_id: shipmentData.user_id,
+            title: `Shipment ${newStatus}`,
+            content: `Your shipment #${shipmentData.tracking_number} has been updated to ${newStatus}.`
+          });
+      }
+      
+      toast({
+        title: "Status Updated",
+        description: `The shipment has been updated to ${newStatus}.`
+      });
+      
+      fetchShipments();
+    } catch (err: any) {
+      console.error('Error updating shipment status:', err);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: err.message || "Failed to update shipment status."
+      });
+    }
+  };
+
   const handleViewDetails = (shipment: Shipment) => {
     setSelectedShipment(shipment);
     setShowDetailsModal(true);
@@ -345,27 +397,41 @@ const ShipmentsManagement = () => {
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        {shipment.status === "Pending" && (
-                          <>
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                              title="Approve shipment"
-                              onClick={() => handleApproveShipment(shipment.id)}
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              title="Reject shipment"
-                              onClick={() => handleRejectShipment(shipment.id)}
-                            >
-                              <XCircle className="h-4 w-4" />
-                            </Button>
-                          </>
+                        
+                        {shipment.status !== "In Transit" && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            title="Set to In Transit"
+                            onClick={() => handleUpdateStatus(shipment.id, "In Transit")}
+                          >
+                            <Map className="h-4 w-4" />
+                          </Button>
+                        )}
+                        
+                        {shipment.status !== "On Hold" && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                            title="Put On Hold"
+                            onClick={() => handleUpdateStatus(shipment.id, "On Hold")}
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                        )}
+                        
+                        {shipment.status !== "Delivered" && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                            title="Mark as Delivered"
+                            onClick={() => handleUpdateStatus(shipment.id, "Delivered")}
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                          </Button>
                         )}
                       </div>
                     </TableCell>

@@ -37,8 +37,9 @@ const ShipmentsPage: React.FC<ShipmentsPageProps> = ({ loading, shipments }) => 
       case "delivered":
         return "bg-green-100 text-green-800 hover:bg-green-100";
       case "in transit":
-      case "in-transit":
         return "bg-blue-100 text-blue-800 hover:bg-blue-100";
+      case "on hold":
+        return "bg-orange-100 text-orange-800 hover:bg-orange-100";
       case "pending":
         return "bg-yellow-100 text-yellow-800 hover:bg-yellow-100";
       case "approved":
@@ -111,11 +112,12 @@ const ShipmentsPage: React.FC<ShipmentsPageProps> = ({ loading, shipments }) => 
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="in transit">In Transit</SelectItem>
+                    <SelectItem value="on hold">On Hold</SelectItem>
+                    <SelectItem value="delivered">Delivered</SelectItem>
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="approved">Approved</SelectItem>
                     <SelectItem value="processing">Processing</SelectItem>
-                    <SelectItem value="in transit">In Transit</SelectItem>
-                    <SelectItem value="delivered">Delivered</SelectItem>
                     <SelectItem value="delayed">Delayed</SelectItem>
                     <SelectItem value="rejected">Rejected</SelectItem>
                   </SelectContent>

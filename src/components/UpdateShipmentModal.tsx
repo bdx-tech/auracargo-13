@@ -83,11 +83,14 @@ const UpdateShipmentModal: React.FC<UpdateShipmentModalProps> = ({
       
       // If status changed, create a tracking event
       if (isStatusChanged) {
+        // Convert status to event_type format (lowercase with hyphens)
+        const eventType = formData.status.toLowerCase().replace(' ', '-');
+        
         await supabase
           .from('tracking_events')
           .insert({
             shipment_id: shipment.id,
-            event_type: formData.status.toLowerCase(),
+            event_type: eventType,
             description: `Shipment status updated from ${prevStatus} to ${formData.status}`,
             location: formData.current_location || 'Processing Center'
           });
@@ -150,6 +153,7 @@ const UpdateShipmentModal: React.FC<UpdateShipmentModalProps> = ({
                   <SelectItem value="Approved">Approved</SelectItem>
                   <SelectItem value="Processing">Processing</SelectItem>
                   <SelectItem value="In Transit">In Transit</SelectItem>
+                  <SelectItem value="On Hold">On Hold</SelectItem>
                   <SelectItem value="Delivered">Delivered</SelectItem>
                   <SelectItem value="Delayed">Delayed</SelectItem>
                   <SelectItem value="Rejected">Rejected</SelectItem>
