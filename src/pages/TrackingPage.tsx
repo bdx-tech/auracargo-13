@@ -15,13 +15,16 @@ import {
   MapPin, 
   Clock, 
   ArrowLeft,
-  AlertTriangle
+  AlertTriangle,
+  Phone,
+  WhatsApp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const TrackingPage = () => {
   const { trackingNumber } = useParams<{ trackingNumber: string }>();
@@ -154,6 +157,34 @@ const TrackingPage = () => {
                 </div>
               ) : shipment ? (
                 <div className="space-y-6">
+                  {/* Shipment Details Table */}
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Tracking ID</TableHead>
+                        <TableHead>Customer</TableHead>
+                        <TableHead>Receiver</TableHead>
+                        <TableHead>Origin</TableHead>
+                        <TableHead>Destination</TableHead>
+                        <TableHead>Current Location</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell className="font-medium">{shipment.tracking_number}</TableCell>
+                        <TableCell>{shipment.sender_name || "N/A"}</TableCell>
+                        <TableCell>{shipment.receiver_name || "N/A"}</TableCell>
+                        <TableCell>{shipment.origin}</TableCell>
+                        <TableCell>{shipment.destination}</TableCell>
+                        <TableCell>{shipment.current_location || "In transit"}</TableCell>
+                        <TableCell>{format(new Date(shipment.created_at), "MMM dd, yyyy")}</TableCell>
+                        <TableCell className={getStatusColor(shipment.status)}>{shipment.status}</TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+
                   <div className="grid md:grid-cols-2 gap-6">
                     <div>
                       <h3 className="text-sm font-medium text-gray-500 mb-1">From</h3>
@@ -213,6 +244,32 @@ const TrackingPage = () => {
                         <p>No tracking updates available yet</p>
                       </div>
                     )}
+                  </div>
+                  
+                  {/* Contact Section */}
+                  <div className="mt-10 pt-6 border-t border-gray-200">
+                    <h3 className="text-lg font-semibold mb-4">Need Help With Your Shipment?</h3>
+                    <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+                      <p className="text-gray-600">Contact our customer support team:</p>
+                      <div className="flex gap-4">
+                        <a 
+                          href="tel:+2348081092657" 
+                          className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
+                        >
+                          <Phone className="h-5 w-5" />
+                          <span>Call Us</span>
+                        </a>
+                        <a 
+                          href="https://wa.me/2348081092657" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-green-600 hover:text-green-800"
+                        >
+                          <WhatsApp className="h-5 w-5" />
+                          <span>WhatsApp</span>
+                        </a>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ) : null}

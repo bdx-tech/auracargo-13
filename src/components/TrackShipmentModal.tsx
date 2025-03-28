@@ -1,12 +1,12 @@
-
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Package, MapPin, CheckCircle, Clock, AlertTriangle } from "lucide-react";
+import { Loader2, Package, MapPin, CheckCircle, Clock, AlertTriangle, WhatsApp, Phone } from "lucide-react";
 import { format } from "date-fns";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface TrackShipmentModalProps {
   open: boolean;
@@ -92,7 +92,7 @@ const TrackShipmentModal: React.FC<TrackShipmentModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[550px]">
+      <DialogContent className="sm:max-w-[650px]">
         <DialogHeader>
           <DialogTitle>Track Your Shipment</DialogTitle>
           <DialogDescription>
@@ -115,6 +115,32 @@ const TrackShipmentModal: React.FC<TrackShipmentModalProps> = ({
           
           {showEvents && shipment && (
             <div className="space-y-4">
+              {/* Shipment Details Table */}
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Tracking ID</TableHead>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Receiver</TableHead>
+                      <TableHead>Origin</TableHead>
+                      <TableHead>Destination</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell className="font-medium">{shipment.tracking_number}</TableCell>
+                      <TableCell>{shipment.sender_name || "N/A"}</TableCell>
+                      <TableCell>{shipment.receiver_name || "N/A"}</TableCell>
+                      <TableCell>{shipment.origin}</TableCell>
+                      <TableCell>{shipment.destination}</TableCell>
+                      <TableCell className="capitalize">{shipment.status}</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+              
               <div className="bg-muted p-4 rounded-md">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-medium">Shipment Details</h3>
@@ -125,14 +151,8 @@ const TrackShipmentModal: React.FC<TrackShipmentModalProps> = ({
                 </div>
                 
                 <div className="grid grid-cols-2 gap-y-2 text-sm">
-                  <div className="text-muted-foreground">Tracking Number:</div>
-                  <div>{shipment.tracking_number}</div>
-                  
-                  <div className="text-muted-foreground">Origin:</div>
-                  <div>{shipment.origin}</div>
-                  
-                  <div className="text-muted-foreground">Destination:</div>
-                  <div>{shipment.destination}</div>
+                  <div className="text-muted-foreground">Current Location:</div>
+                  <div>{shipment.current_location || "In transit"}</div>
                   
                   <div className="text-muted-foreground">Ship Date:</div>
                   <div>{format(new Date(shipment.created_at), 'MMM dd, yyyy')}</div>
@@ -173,6 +193,31 @@ const TrackShipmentModal: React.FC<TrackShipmentModalProps> = ({
                     No tracking updates available yet
                   </div>
                 )}
+              </div>
+              
+              {/* Contact Section */}
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                  <span className="text-sm text-gray-600">Need help with this shipment?</span>
+                  <div className="flex gap-3">
+                    <a 
+                      href="tel:+2348081092657" 
+                      className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
+                    >
+                      <Phone className="h-4 w-4" />
+                      <span>Call</span>
+                    </a>
+                    <a 
+                      href="https://wa.me/2348081092657" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-sm text-green-600 hover:text-green-800"
+                    >
+                      <WhatsApp className="h-4 w-4" />
+                      <span>WhatsApp</span>
+                    </a>
+                  </div>
+                </div>
               </div>
             </div>
           )}
