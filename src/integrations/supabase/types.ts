@@ -250,27 +250,30 @@ export type Database = {
       support_conversations: {
         Row: {
           created_at: string
+          guest_email: string | null
           id: string
           status: string
           title: string
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
+          guest_email?: string | null
           id?: string
           status?: string
           title?: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
+          guest_email?: string | null
           id?: string
           status?: string
           title?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -287,28 +290,34 @@ export type Database = {
           content: string
           conversation_id: string
           created_at: string
+          guest_email: string | null
+          guest_name: string | null
           id: string
           is_admin: boolean
           read: boolean
-          sender_id: string
+          sender_id: string | null
         }
         Insert: {
           content: string
           conversation_id: string
           created_at?: string
+          guest_email?: string | null
+          guest_name?: string | null
           id?: string
           is_admin?: boolean
           read?: boolean
-          sender_id: string
+          sender_id?: string | null
         }
         Update: {
           content?: string
           conversation_id?: string
           created_at?: string
+          guest_email?: string | null
+          guest_name?: string | null
           id?: string
           is_admin?: boolean
           read?: boolean
-          sender_id?: string
+          sender_id?: string | null
         }
         Relationships: [
           {
@@ -367,6 +376,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_column_if_not_exists: {
+        Args: {
+          p_table_name: string
+          p_column_name: string
+          p_data_type: string
+        }
+        Returns: undefined
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string

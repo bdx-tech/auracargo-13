@@ -22,22 +22,22 @@ serve(async (req) => {
 
     // Add guest_email column to support_conversations table if it doesn't exist
     const { error: error1 } = await supabaseAdmin.rpc('add_column_if_not_exists', {
-      table_name: 'support_conversations',
-      column_name: 'guest_email',
-      data_type: 'text'
+      p_table_name: 'support_conversations',
+      p_column_name: 'guest_email',
+      p_data_type: 'text'
     }).throwOnError()
 
     // Add guest_name and guest_email columns to support_messages table if they don't exist
     const { error: error2 } = await supabaseAdmin.rpc('add_column_if_not_exists', {
-      table_name: 'support_messages',
-      column_name: 'guest_name',
-      data_type: 'text'
+      p_table_name: 'support_messages',
+      p_column_name: 'guest_name',
+      p_data_type: 'text'
     }).throwOnError()
 
     const { error: error3 } = await supabaseAdmin.rpc('add_column_if_not_exists', {
-      table_name: 'support_messages',
-      column_name: 'guest_email',
-      data_type: 'text'
+      p_table_name: 'support_messages',
+      p_column_name: 'guest_email',
+      p_data_type: 'text'
     }).throwOnError()
 
     // Make user_id column nullable in the support_conversations table
@@ -52,28 +52,8 @@ serve(async (req) => {
       ALTER COLUMN sender_id DROP NOT NULL;
     `)
 
-    // Create RPC function to add columns if they don't exist
-    const { error: rpcError } = await supabaseAdmin.query(`
-      CREATE OR REPLACE FUNCTION add_column_if_not_exists(
-        table_name text,
-        column_name text,
-        data_type text
-      ) RETURNS void AS $$
-      BEGIN
-        IF NOT EXISTS (
-          SELECT 1
-          FROM information_schema.columns
-          WHERE table_name = $1
-          AND column_name = $2
-        ) THEN
-          EXECUTE format('ALTER TABLE %I ADD COLUMN %I %s', $1, $2, $3);
-        END IF;
-      END;
-      $$ LANGUAGE plpgsql;
-    `)
-
-    if (error1 || error2 || error3 || error4 || error5 || rpcError) {
-      throw new Error(JSON.stringify({ error1, error2, error3, error4, error5, rpcError }))
+    if (error1 || error2 || error3 || error4 || error5) {
+      throw new Error(JSON.stringify({ error1, error2, error3, error4, error5 }))
     }
 
     return new Response(
