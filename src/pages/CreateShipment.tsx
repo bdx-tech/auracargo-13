@@ -34,9 +34,14 @@ const shipmentFormSchema = z.object({
   origin: z.string().min(5, { message: "Origin address is required" }),
   destination: z.string().min(5, { message: "Destination address is required" }),
   weight: z.coerce.number().min(0.1, { message: "Weight must be greater than 0" }),
-  recipient_name: z.string().min(3, { message: "Recipient name is required" }),
-  recipient_email: z.string().email({ message: "Valid email is required" }).optional(),
-  recipient_phone: z.string().min(5, { message: "Valid phone number is required" }),
+  sender_name: z.string().min(3, { message: "Sender name is required" }),
+  sender_email: z.string().email({ message: "Valid sender email is required" }),
+  receiver_name: z.string().min(3, { message: "Receiver name is required" }),
+  receiver_email: z.string().email({ message: "Valid receiver email is required" }),
+  volume: z.string().optional(),
+  term: z.string().optional(),
+  physical_weight: z.coerce.number().optional(),
+  quantity: z.coerce.number().int().optional()
 });
 
 type ShipmentFormValues = z.infer<typeof shipmentFormSchema>;
@@ -55,9 +60,14 @@ const CreateShipment = () => {
       origin: "",
       destination: "",
       weight: undefined,
-      recipient_name: "",
-      recipient_email: "",
-      recipient_phone: "",
+      sender_name: "",
+      sender_email: "",
+      receiver_name: "",
+      receiver_email: "",
+      volume: "",
+      term: "",
+      physical_weight: undefined,
+      quantity: undefined
     },
   });
 
@@ -94,9 +104,14 @@ const CreateShipment = () => {
             status: 'Pending',
             tracking_number: trackingNumber,
             user_id: user.id,
-            recipient_name: shipmentData.recipient_name,
-            recipient_email: shipmentData.recipient_email,
-            recipient_phone: shipmentData.recipient_phone,
+            sender_name: shipmentData.sender_name,
+            sender_email: shipmentData.sender_email,
+            receiver_name: shipmentData.receiver_name,
+            receiver_email: shipmentData.receiver_email,
+            volume: shipmentData.volume,
+            term: shipmentData.term,
+            physical_weight: shipmentData.physical_weight,
+            quantity: shipmentData.quantity,
             payment_status: 'paid'
           }
         ])
@@ -166,8 +181,36 @@ const CreateShipment = () => {
                 <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-4">
-                      <h3 className="text-lg font-medium">Shipment Details</h3>
+                      <h3 className="text-lg font-medium">Sender Information</h3>
                       
+                      <FormField
+                        control={form.control}
+                        name="sender_name"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Sender's Name</FormLabel>
+                            <FormControl>
+                              <Input placeholder="John Doe" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="sender_email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Sender's Email</FormLabel>
+                            <FormControl>
+                              <Input placeholder="john@example.com" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
                       <FormField
                         control={form.control}
                         name="origin"
@@ -176,6 +219,38 @@ const CreateShipment = () => {
                             <FormLabel>Origin Address</FormLabel>
                             <FormControl>
                               <Input placeholder="123 Main St, City, Country" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium">Receiver Information</h3>
+                      
+                      <FormField
+                        control={form.control}
+                        name="receiver_name"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Receiver's Name</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Jane Doe" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="receiver_email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Receiver's Email</FormLabel>
+                            <FormControl>
+                              <Input placeholder="jane@example.com" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -195,73 +270,98 @@ const CreateShipment = () => {
                           </FormItem>
                         )}
                       />
-                      
-                      <FormField
-                        control={form.control}
-                        name="weight"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Weight (kg)</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="number" 
-                                step="0.01" 
-                                min="0.1" 
-                                placeholder="10.5"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="weight"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Weight (kg)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              step="0.01" 
+                              min="0.1" 
+                              placeholder="10.5"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-medium">Recipient Information</h3>
-                      
-                      <FormField
-                        control={form.control}
-                        name="recipient_name"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Recipient Name</FormLabel>
-                            <FormControl>
-                              <Input placeholder="John Doe" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="recipient_email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Recipient Email</FormLabel>
-                            <FormControl>
-                              <Input placeholder="johndoe@example.com" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="recipient_phone"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Recipient Phone</FormLabel>
-                            <FormControl>
-                              <Input placeholder="+234 800 123 4567" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                    <FormField
+                      control={form.control}
+                      name="physical_weight"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Physical Weight (kg)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              step="0.01" 
+                              min="0" 
+                              placeholder="9.8"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="quantity"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Quantity</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              min="1" 
+                              placeholder="1"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="volume"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Volume</FormLabel>
+                          <FormControl>
+                            <Input placeholder="2x3x4 m³" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="term"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Term</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Express/Standard/Economy" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
                   
                   {form.watch("weight") && (
@@ -319,7 +419,7 @@ const CreateShipment = () => {
           onOpenChange={setShowPaymentModal}
           onSuccess={handlePaymentSuccess}
           amount={calculateShippingFee(shipmentData.weight)}
-          email={user.email || shipmentData.recipient_email || ''}
+          email={user.email || shipmentData.sender_email || ''}
         />
       )}
     </div>

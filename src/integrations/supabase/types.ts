@@ -197,44 +197,71 @@ export type Database = {
       shipments: {
         Row: {
           created_at: string
+          current_location: string | null
           destination: string
           dimensions: string | null
           estimated_delivery: string | null
           id: string
           origin: string
+          physical_weight: number | null
+          quantity: number | null
+          receiver_email: string | null
+          receiver_name: string | null
+          sender_email: string | null
+          sender_name: string | null
           service_type: string | null
           status: string
+          term: string | null
           tracking_number: string
           updated_at: string
           user_id: string | null
+          volume: string | null
           weight: number | null
         }
         Insert: {
           created_at?: string
+          current_location?: string | null
           destination: string
           dimensions?: string | null
           estimated_delivery?: string | null
           id?: string
           origin: string
+          physical_weight?: number | null
+          quantity?: number | null
+          receiver_email?: string | null
+          receiver_name?: string | null
+          sender_email?: string | null
+          sender_name?: string | null
           service_type?: string | null
           status?: string
+          term?: string | null
           tracking_number: string
           updated_at?: string
           user_id?: string | null
+          volume?: string | null
           weight?: number | null
         }
         Update: {
           created_at?: string
+          current_location?: string | null
           destination?: string
           dimensions?: string | null
           estimated_delivery?: string | null
           id?: string
           origin?: string
+          physical_weight?: number | null
+          quantity?: number | null
+          receiver_email?: string | null
+          receiver_name?: string | null
+          sender_email?: string | null
+          sender_name?: string | null
           service_type?: string | null
           status?: string
+          term?: string | null
           tracking_number?: string
           updated_at?: string
           user_id?: string | null
+          volume?: string | null
           weight?: number | null
         }
         Relationships: [

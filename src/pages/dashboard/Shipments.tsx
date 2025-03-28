@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,11 +12,13 @@ import {
   Filter,
   Download,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Eye
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { Link } from "react-router-dom";
+import ShipmentDetailsModal from "@/components/ShipmentDetailsModal";
 
 interface ShipmentsPageProps {
   loading: boolean;
@@ -25,28 +28,39 @@ interface ShipmentsPageProps {
 const ShipmentsPage: React.FC<ShipmentsPageProps> = ({ loading, shipments }) => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedShipment, setSelectedShipment] = useState<any | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const { toast } = useToast();
   
   const getStatusBadgeColor = (status: string) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case "delivered":
         return "bg-green-100 text-green-800 hover:bg-green-100";
+      case "in transit":
       case "in-transit":
         return "bg-blue-100 text-blue-800 hover:bg-blue-100";
       case "pending":
         return "bg-yellow-100 text-yellow-800 hover:bg-yellow-100";
+      case "approved":
+      case "processing":
+        return "bg-purple-100 text-purple-800 hover:bg-purple-100";
+      case "delayed":
+        return "bg-orange-100 text-orange-800 hover:bg-orange-100";
+      case "rejected":
+        return "bg-red-100 text-red-800 hover:bg-red-100";
       default:
         return "bg-gray-100 text-gray-800 hover:bg-gray-100";
     }
   };
 
   const filteredShipments = shipments.filter(shipment => {
-    const matchesStatus = statusFilter === "all" || shipment.status === statusFilter;
+    const matchesStatus = statusFilter === "all" || shipment.status.toLowerCase() === statusFilter.toLowerCase();
     const matchesSearch = 
       searchQuery === "" || 
       shipment.tracking_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
       shipment.origin.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      shipment.destination.toLowerCase().includes(searchQuery.toLowerCase());
+      shipment.destination.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (shipment.current_location && shipment.current_location.toLowerCase().includes(searchQuery.toLowerCase()));
     
     return matchesStatus && matchesSearch;
   });
@@ -56,6 +70,11 @@ const ShipmentsPage: React.FC<ShipmentsPageProps> = ({ loading, shipments }) => 
       title: "Export started",
       description: "Your shipments data is being exported to CSV",
     });
+  };
+
+  const handleViewDetails = (shipment: any) => {
+    setSelectedShipment(shipment);
+    setShowDetailsModal(true);
   };
 
   return (
@@ -93,8 +112,12 @@ const ShipmentsPage: React.FC<ShipmentsPageProps> = ({ loading, shipments }) => 
                   <SelectContent>
                     <SelectItem value="all">All Statuses</SelectItem>
                     <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="in-transit">In Transit</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="processing">Processing</SelectItem>
+                    <SelectItem value="in transit">In Transit</SelectItem>
                     <SelectItem value="delivered">Delivered</SelectItem>
+                    <SelectItem value="delayed">Delayed</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button variant="outline" size="icon">
@@ -122,6 +145,8 @@ const ShipmentsPage: React.FC<ShipmentsPageProps> = ({ loading, shipments }) => 
                     <TableHead>Tracking ID</TableHead>
                     <TableHead>Origin</TableHead>
                     <TableHead>Destination</TableHead>
+                    <TableHead>Current Location</TableHead>
+                    <TableHead>Receiver</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -133,14 +158,21 @@ const ShipmentsPage: React.FC<ShipmentsPageProps> = ({ loading, shipments }) => 
                       <TableCell className="font-medium">{shipment.tracking_number}</TableCell>
                       <TableCell>{shipment.origin}</TableCell>
                       <TableCell>{shipment.destination}</TableCell>
+                      <TableCell>{shipment.current_location || "Not assigned"}</TableCell>
+                      <TableCell>{shipment.receiver_name || "N/A"}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={getStatusBadgeColor(shipment.status)}>
-                          {shipment.status.charAt(0).toUpperCase() + shipment.status.slice(1)}
+                          {shipment.status}
                         </Badge>
                       </TableCell>
                       <TableCell>{new Date(shipment.created_at).toLocaleDateString()}</TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleViewDetails(shipment)}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
                           Details
                         </Button>
                       </TableCell>
@@ -169,6 +201,14 @@ const ShipmentsPage: React.FC<ShipmentsPageProps> = ({ loading, shipments }) => 
           )}
         </CardContent>
       </Card>
+
+      {selectedShipment && (
+        <ShipmentDetailsModal
+          open={showDetailsModal}
+          onOpenChange={setShowDetailsModal}
+          shipment={selectedShipment}
+        />
+      )}
     </div>
   );
 };

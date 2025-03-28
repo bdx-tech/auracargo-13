@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { 
   Table, 
@@ -10,10 +11,21 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter, Package, Eye, Pencil, CheckCircle, XCircle } from "lucide-react";
+import { 
+  Search, 
+  Filter, 
+  Package, 
+  Eye, 
+  Pencil, 
+  CheckCircle, 
+  XCircle,
+  Map
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import CreateShipmentModal from "@/components/CreateShipmentModal";
 import { useToast } from "@/components/ui/use-toast";
+import ShipmentDetailsModal from "@/components/ShipmentDetailsModal";
+import UpdateShipmentModal from "@/components/UpdateShipmentModal";
 
 interface Shipment {
   id: string;
@@ -22,6 +34,16 @@ interface Shipment {
   destination: string;
   status: string;
   created_at: string;
+  current_location: string | null;
+  sender_name: string | null;
+  sender_email: string | null;
+  receiver_name: string | null;
+  receiver_email: string | null;
+  weight: number | null;
+  volume: string | null;
+  term: string | null;
+  physical_weight: number | null;
+  quantity: number | null;
   profiles: {
     email: string;
     first_name: string | null;
@@ -35,6 +57,9 @@ const ShipmentsManagement = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -55,6 +80,16 @@ const ShipmentsManagement = () => {
           destination,
           status,
           created_at,
+          current_location,
+          sender_name,
+          sender_email,
+          receiver_name,
+          receiver_email,
+          weight,
+          volume,
+          term,
+          physical_weight,
+          quantity,
           profiles:user_id (
             email,
             first_name,
@@ -76,7 +111,9 @@ const ShipmentsManagement = () => {
   
   const filteredShipments = shipments.filter(shipment => 
     shipment.tracking_number.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (shipment.profiles?.email && shipment.profiles.email.toLowerCase().includes(searchTerm.toLowerCase()))
+    (shipment.profiles?.email && shipment.profiles.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (shipment.sender_name && shipment.sender_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (shipment.receiver_name && shipment.receiver_name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const getStatusVariant = (status: string) => {
@@ -92,6 +129,7 @@ const ShipmentsManagement = () => {
   };
 
   const getCustomerName = (shipment: Shipment) => {
+    if (shipment.sender_name) return shipment.sender_name;
     if (!shipment.profiles) return "Unknown";
     
     const firstName = shipment.profiles.first_name || "";
@@ -208,6 +246,21 @@ const ShipmentsManagement = () => {
     }
   };
 
+  const handleViewDetails = (shipment: Shipment) => {
+    setSelectedShipment(shipment);
+    setShowDetailsModal(true);
+  };
+
+  const handleEdit = (shipment: Shipment) => {
+    setSelectedShipment(shipment);
+    setShowUpdateModal(true);
+  };
+
+  const handleShipmentUpdated = () => {
+    fetchShipments();
+    setShowUpdateModal(false);
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -249,8 +302,10 @@ const ShipmentsManagement = () => {
               <TableRow>
                 <TableHead>Tracking ID</TableHead>
                 <TableHead>Customer</TableHead>
+                <TableHead>Receiver</TableHead>
                 <TableHead>Origin</TableHead>
                 <TableHead>Destination</TableHead>
+                <TableHead>Current Location</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -262,8 +317,10 @@ const ShipmentsManagement = () => {
                   <TableRow key={shipment.id}>
                     <TableCell className="font-medium">{shipment.tracking_number}</TableCell>
                     <TableCell>{getCustomerName(shipment)}</TableCell>
+                    <TableCell>{shipment.receiver_name || "N/A"}</TableCell>
                     <TableCell>{shipment.origin}</TableCell>
                     <TableCell>{shipment.destination}</TableCell>
+                    <TableCell>{shipment.current_location || "Not assigned"}</TableCell>
                     <TableCell>{new Date(shipment.created_at).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <Badge variant={getStatusVariant(shipment.status)}>
@@ -276,6 +333,7 @@ const ShipmentsManagement = () => {
                           variant="ghost" 
                           size="icon" 
                           title="View details"
+                          onClick={() => handleViewDetails(shipment)}
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -283,6 +341,7 @@ const ShipmentsManagement = () => {
                           variant="ghost" 
                           size="icon"
                           title="Edit shipment"
+                          onClick={() => handleEdit(shipment)}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -314,7 +373,7 @@ const ShipmentsManagement = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center">
+                  <TableCell colSpan={9} className="text-center">
                     No shipments found
                   </TableCell>
                 </TableRow>
@@ -329,6 +388,22 @@ const ShipmentsManagement = () => {
         onOpenChange={setShowCreateModal}
         onSuccess={handleShipmentCreated}
       />
+
+      {selectedShipment && (
+        <>
+          <ShipmentDetailsModal
+            open={showDetailsModal}
+            onOpenChange={setShowDetailsModal}
+            shipment={selectedShipment}
+          />
+          <UpdateShipmentModal
+            open={showUpdateModal}
+            onOpenChange={setShowUpdateModal}
+            shipment={selectedShipment}
+            onSuccess={handleShipmentUpdated}
+          />
+        </>
+      )}
     </div>
   );
 };

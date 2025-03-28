@@ -31,6 +31,14 @@ const CreateShipmentModal: React.FC<CreateShipmentModalProps> = ({
     origin: "",
     destination: "",
     weight: "",
+    sender_name: "",
+    sender_email: "",
+    receiver_name: "",
+    receiver_email: "",
+    volume: "",
+    term: "",
+    physical_weight: "",
+    quantity: ""
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -69,7 +77,15 @@ const CreateShipmentModal: React.FC<CreateShipmentModalProps> = ({
           status: 'Pending',
           tracking_number: trackingNumber,
           user_id: user.id,
-          payment_status: 'paid'
+          payment_status: 'paid',
+          sender_name: formData.sender_name,
+          sender_email: formData.sender_email,
+          receiver_name: formData.receiver_name,
+          receiver_email: formData.receiver_email,
+          volume: formData.volume,
+          term: formData.term,
+          physical_weight: formData.physical_weight ? parseFloat(formData.physical_weight) : null,
+          quantity: formData.quantity ? parseInt(formData.quantity) : null
         }])
         .select();
         
@@ -94,6 +110,14 @@ const CreateShipmentModal: React.FC<CreateShipmentModalProps> = ({
         origin: "",
         destination: "",
         weight: "",
+        sender_name: "",
+        sender_email: "",
+        receiver_name: "",
+        receiver_email: "",
+        volume: "",
+        term: "",
+        physical_weight: "",
+        quantity: ""
       });
       
       onOpenChange(false);
@@ -118,7 +142,7 @@ const CreateShipmentModal: React.FC<CreateShipmentModalProps> = ({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Create New Shipment</DialogTitle>
             <DialogDescription>
@@ -127,7 +151,57 @@ const CreateShipmentModal: React.FC<CreateShipmentModalProps> = ({
           </DialogHeader>
           
           <form onSubmit={handleSubmitForm} className="space-y-4 py-4">
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="sender_name">Sender's Name</Label>
+                <Input
+                  id="sender_name"
+                  name="sender_name"
+                  value={formData.sender_name}
+                  onChange={handleChange}
+                  placeholder="John Doe"
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="sender_email">Sender's Email</Label>
+                <Input
+                  id="sender_email"
+                  name="sender_email"
+                  type="email"
+                  value={formData.sender_email}
+                  onChange={handleChange}
+                  placeholder="john@example.com"
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="receiver_name">Receiver's Name</Label>
+                <Input
+                  id="receiver_name"
+                  name="receiver_name"
+                  value={formData.receiver_name}
+                  onChange={handleChange}
+                  placeholder="Jane Doe"
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="receiver_email">Receiver's Email</Label>
+                <Input
+                  id="receiver_email"
+                  name="receiver_email"
+                  type="email"
+                  value={formData.receiver_email}
+                  onChange={handleChange}
+                  placeholder="jane@example.com"
+                  required
+                />
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="origin">Origin Address</Label>
                 <Input
@@ -164,6 +238,55 @@ const CreateShipmentModal: React.FC<CreateShipmentModalProps> = ({
                   onChange={handleChange}
                   placeholder="10.5"
                   required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="physical_weight">Physical Weight (kg)</Label>
+                <Input
+                  id="physical_weight"
+                  name="physical_weight"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.physical_weight}
+                  onChange={handleChange}
+                  placeholder="9.8"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="volume">Volume</Label>
+                <Input
+                  id="volume"
+                  name="volume"
+                  value={formData.volume}
+                  onChange={handleChange}
+                  placeholder="2x3x4 m³"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="quantity">Quantity</Label>
+                <Input
+                  id="quantity"
+                  name="quantity"
+                  type="number"
+                  min="1"
+                  value={formData.quantity}
+                  onChange={handleChange}
+                  placeholder="1"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="term">Term</Label>
+                <Input
+                  id="term"
+                  name="term"
+                  value={formData.term}
+                  onChange={handleChange}
+                  placeholder="Express/Standard/Economy"
                 />
               </div>
             </div>
