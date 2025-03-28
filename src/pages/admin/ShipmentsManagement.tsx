@@ -21,10 +21,10 @@ import {
   Map
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import CreateShipmentModal from "@/components/CreateShipmentModal";
 import { useToast } from "@/components/ui/use-toast";
 import ShipmentDetailsModal from "@/components/ShipmentDetailsModal";
 import UpdateShipmentModal from "@/components/UpdateShipmentModal";
+import { useNavigate } from "react-router-dom";
 
 interface Shipment {
   id: string;
@@ -55,11 +55,11 @@ const ShipmentsManagement = () => {
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchShipments();
@@ -140,10 +140,6 @@ const ShipmentsManagement = () => {
     }
     
     return shipment.profiles.email;
-  };
-
-  const handleShipmentCreated = () => {
-    fetchShipments();
   };
   
   const handleApproveShipment = async (shipmentId: string) => {
@@ -313,6 +309,10 @@ const ShipmentsManagement = () => {
     setShowUpdateModal(false);
   };
 
+  const navigateToCreateShipment = () => {
+    navigate('/create-shipment');
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -336,7 +336,7 @@ const ShipmentsManagement = () => {
             <Filter className="mr-2 h-4 w-4" />
             Filter
           </Button>
-          <Button size="sm" onClick={() => setShowCreateModal(true)}>
+          <Button size="sm" onClick={navigateToCreateShipment}>
             <Package className="mr-2 h-4 w-4" />
             New Shipment
           </Button>
@@ -448,12 +448,6 @@ const ShipmentsManagement = () => {
           </Table>
         )}
       </div>
-
-      <CreateShipmentModal 
-        open={showCreateModal} 
-        onOpenChange={setShowCreateModal}
-        onSuccess={handleShipmentCreated}
-      />
 
       {selectedShipment && (
         <>
