@@ -16,9 +16,9 @@ import {
   ChevronRight
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import CreateShipmentModal from "@/components/CreateShipmentModal";
 import TrackShipmentModal from "@/components/TrackShipmentModal";
 import GenerateReportModal from "@/components/GenerateReportModal";
+import { useNavigate } from "react-router-dom";
 
 interface OverviewPageProps {
   loading: boolean;
@@ -31,8 +31,8 @@ interface OverviewPageProps {
 
 const OverviewPage: React.FC<OverviewPageProps> = ({ loading, data, setActiveTab }) => {
   const { shipments, notifications } = data;
+  const navigate = useNavigate();
   
-  const [isCreateShipmentOpen, setIsCreateShipmentOpen] = useState(false);
   const [isTrackShipmentOpen, setIsTrackShipmentOpen] = useState(false);
   const [isGenerateReportOpen, setIsGenerateReportOpen] = useState(false);
   
@@ -53,9 +53,8 @@ const OverviewPage: React.FC<OverviewPageProps> = ({ loading, data, setActiveTab
     }
   };
   
-  const handleRefreshData = () => {
-    // This would typically refresh the data from the parent component
-    // For now, just close the modal
+  const handleNavigateToCreateShipment = () => {
+    navigate('/create-shipment');
   };
 
   return (
@@ -196,7 +195,7 @@ const OverviewPage: React.FC<OverviewPageProps> = ({ loading, data, setActiveTab
             <Button 
               className="w-full justify-start" 
               variant="outline"
-              onClick={() => setIsCreateShipmentOpen(true)}
+              onClick={handleNavigateToCreateShipment}
             >
               <Plus className="mr-2 h-4 w-4" /> Create New Shipment
             </Button>
@@ -248,12 +247,6 @@ const OverviewPage: React.FC<OverviewPageProps> = ({ loading, data, setActiveTab
       </div>
       
       {/* Modals */}
-      <CreateShipmentModal 
-        open={isCreateShipmentOpen} 
-        onOpenChange={setIsCreateShipmentOpen}
-        onSuccess={handleRefreshData}
-      />
-      
       <TrackShipmentModal
         open={isTrackShipmentOpen}
         onOpenChange={setIsTrackShipmentOpen}
