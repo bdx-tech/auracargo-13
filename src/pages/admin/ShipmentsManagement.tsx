@@ -119,7 +119,7 @@ const ShipmentsManagement = () => {
     switch (status.toLowerCase()) {
       case "delivered": return "default";
       case "in transit": return "secondary";
-      case "on hold": return "warning";
+      case "on hold": return "outline";
       case "processing": return "secondary";
       case "delayed": return "destructive";
       case "pending": return "outline";
