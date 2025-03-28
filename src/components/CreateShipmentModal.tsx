@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -69,11 +70,14 @@ const CreateShipmentModal: React.FC<CreateShipmentModalProps> = ({
           volume: formData.volume,
           term: formData.term,
           physical_weight: formData.physical_weight ? parseFloat(formData.physical_weight) : null,
-          quantity: formData.quantity ? parseInt(formData.quantity) : null
+          quantity: formData.quantity ? parseInt(formData.quantity) : null,
+          status: 'In Transit' // Set status explicitly to ensure it works with the trigger
         }])
         .select();
         
       if (error) throw error;
+      
+      // No need to manually insert tracking event - our database trigger will handle this
       
       toast({
         title: "Success!",

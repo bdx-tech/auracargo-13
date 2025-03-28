@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -76,7 +77,7 @@ const CreateShipment = () => {
       // Generate tracking number
       const trackingNumber = `AUR${Math.floor(100000 + Math.random() * 900000)}`;
       
-      // Create shipment
+      // Create shipment - the database trigger will handle setting status and creating the tracking event
       const { data: shipmentResult, error: shipmentError } = await supabase
         .from('shipments')
         .insert([
@@ -93,7 +94,8 @@ const CreateShipment = () => {
             volume: data.volume,
             term: data.term,
             physical_weight: data.physical_weight,
-            quantity: data.quantity
+            quantity: data.quantity,
+            status: 'In Transit' // Set status explicitly to ensure it works with the trigger
           }
         ])
         .select();
