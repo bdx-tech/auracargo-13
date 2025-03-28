@@ -28,6 +28,13 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const shipmentFormSchema = z.object({
   origin: z.string().min(5, { message: "Origin address is required" }),
@@ -37,8 +44,7 @@ const shipmentFormSchema = z.object({
   sender_email: z.string().email({ message: "Valid sender email is required" }),
   receiver_name: z.string().min(3, { message: "Receiver name is required" }),
   receiver_email: z.string().email({ message: "Valid receiver email is required" }),
-  volume: z.string().optional(),
-  term: z.string().optional(),
+  term: z.string().min(1, { message: "Please select a shipping term" }),
   physical_weight: z.coerce.number().optional(),
   quantity: z.coerce.number().int().optional()
 });
@@ -61,7 +67,6 @@ const CreateShipment = () => {
       sender_email: "",
       receiver_name: "",
       receiver_email: "",
-      volume: "",
       term: "",
       physical_weight: undefined,
       quantity: undefined
@@ -91,7 +96,6 @@ const CreateShipment = () => {
             sender_email: data.sender_email,
             receiver_name: data.receiver_name,
             receiver_email: data.receiver_email,
-            volume: data.volume,
             term: data.term,
             physical_weight: data.physical_weight,
             quantity: data.quantity,
@@ -317,30 +321,32 @@ const CreateShipment = () => {
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={form.control}
-                      name="volume"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Volume</FormLabel>
-                          <FormControl>
-                            <Input placeholder="2x3x4 m³" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
+                  <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
                     <FormField
                       control={form.control}
                       name="term"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Term</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Express/Standard/Economy" {...field} />
-                          </FormControl>
+                          <FormLabel>Shipping Term</FormLabel>
+                          <Select 
+                            onValueChange={field.onChange} 
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select shipping term" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="Express">Express (1-2 days)</SelectItem>
+                              <SelectItem value="Standard">Standard (3-5 days)</SelectItem>
+                              <SelectItem value="Economy">Economy (5-7 days)</SelectItem>
+                              <SelectItem value="Ground">Ground (7-10 days)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormDescription>
+                            Select the shipping speed for your package
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
