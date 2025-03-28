@@ -5,9 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, User, Phone, Send } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const ContactForm = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -21,12 +24,49 @@ const ContactForm = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.name || !formData.email || !formData.message) {
+      toast({
+        title: "Required Fields",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setLoading(true);
     
-    // Simulate form submission
-    setTimeout(() => {
+    try {
+      // Create a support conversation for the contact form submission
+      const { data: conversationData, error: conversationError } = await supabase
+        .from('support_conversations')
+        .insert({
+          user_id: user?.id || null,
+          title: `Contact Form: ${formData.name}`,
+          guest_email: !user ? formData.email : null,
+        })
+        .select('id')
+        .single();
+      
+      if (conversationError) throw conversationError;
+      
+      // Add the message to the conversation
+      const { error: messageError } = await supabase
+        .from('support_messages')
+        .insert({
+          conversation_id: conversationData.id,
+          sender_id: user?.id || null,
+          is_admin: false,
+          content: formData.message,
+          guest_name: !user ? formData.name : null,
+          guest_email: !user ? formData.email : null,
+        });
+      
+      if (messageError) throw messageError;
+      
+      // Show success message
       toast({
         title: "Message Sent",
         description: "Thank you for contacting us. We'll respond shortly.",
@@ -39,8 +79,16 @@ const ContactForm = () => {
         phone: "",
         message: ""
       });
+    } catch (error: any) {
+      console.error('Error submitting contact form:', error);
+      toast({
+        title: "Error",
+        description: "There was a problem sending your message. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (

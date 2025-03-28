@@ -51,13 +51,13 @@ const AdminDashboard = () => {
     <div className="min-h-screen bg-gray-50">
       <Navigation />
       
-      <div className="container mx-auto px-4 py-24">
-        <div className="flex flex-col md:flex-row gap-6">
+      <div className="container mx-auto px-4 py-20">
+        <div className="flex flex-col md:flex-row gap-4">
           {/* Sidebar */}
           <AdminSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
           
           {/* Main Content */}
-          <div className="flex-1 mt-6 md:mt-0">
+          <div className="flex-1 mt-4 md:mt-0">
             {activeTab === "overview" && <AdminOverview />}
             {activeTab === "users" && <UsersPage />}
             {activeTab === "shipments" && <ShipmentsManagement />}
