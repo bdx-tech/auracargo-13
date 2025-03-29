@@ -11,6 +11,9 @@ const Navigation = () => {
   const location = useLocation();
   const { user, profile, signOut, isAdmin } = useAuth();
 
+  // Check if the current route is dashboard or admin
+  const isDashboardOrAdmin = location.pathname.includes('/dashboard') || location.pathname.includes('/admin');
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
@@ -27,7 +30,7 @@ const Navigation = () => {
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? "bg-white shadow-md py-3" : "bg-transparent py-5"
+        isScrolled || isDashboardOrAdmin ? "bg-white shadow-md py-3" : "bg-transparent py-5"
       }`}
     >
       <div className="container mx-auto px-4 md:px-6">
@@ -37,7 +40,9 @@ const Navigation = () => {
               <div className="h-10 w-10 bg-kargon-red rounded-full flex items-center justify-center">
                 <Truck className="text-white" size={20} />
               </div>
-              <span className={`ml-2 font-display font-bold text-xl ${isScrolled ? 'text-kargon-dark' : 'text-white'}`}>
+              <span className={`ml-2 font-display font-bold text-xl ${
+                isScrolled || isDashboardOrAdmin ? 'text-kargon-dark' : 'text-white'
+              }`}>
                 AURACARGO
               </span>
             </div>
@@ -45,25 +50,37 @@ const Navigation = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-6">
-            <Link to="/" className={`nav-link font-medium ${isScrolled ? 'text-kargon-dark' : 'text-white'} hover:text-kargon-red ${isActive('/') ? 'active' : ''}`}>
+            <Link to="/" className={`nav-link font-medium ${
+              isScrolled || isDashboardOrAdmin ? 'text-kargon-dark' : 'text-white'
+            } hover:text-kargon-red ${isActive('/') ? 'active' : ''}`}>
               HOME
             </Link>
-            <Link to="/services" className={`nav-link font-medium ${isScrolled ? 'text-kargon-dark' : 'text-white'} hover:text-kargon-red ${isActive('/services') ? 'active' : ''}`}>
+            <Link to="/services" className={`nav-link font-medium ${
+              isScrolled || isDashboardOrAdmin ? 'text-kargon-dark' : 'text-white'
+            } hover:text-kargon-red ${isActive('/services') ? 'active' : ''}`}>
               SERVICES
             </Link>
-            <Link to="/projects" className={`nav-link font-medium ${isScrolled ? 'text-kargon-dark' : 'text-white'} hover:text-kargon-red ${isActive('/projects') ? 'active' : ''}`}>
+            <Link to="/projects" className={`nav-link font-medium ${
+              isScrolled || isDashboardOrAdmin ? 'text-kargon-dark' : 'text-white'
+            } hover:text-kargon-red ${isActive('/projects') ? 'active' : ''}`}>
               PROJECTS
             </Link>
-            <Link to="/contact" className={`nav-link font-medium ${isScrolled ? 'text-kargon-dark' : 'text-white'} hover:text-kargon-red ${isActive('/contact') ? 'active' : ''}`}>
+            <Link to="/contact" className={`nav-link font-medium ${
+              isScrolled || isDashboardOrAdmin ? 'text-kargon-dark' : 'text-white'
+            } hover:text-kargon-red ${isActive('/contact') ? 'active' : ''}`}>
               CONTACT
             </Link>
             {user && (
-              <Link to="/dashboard" className={`nav-link font-medium ${isScrolled ? 'text-kargon-dark' : 'text-white'} hover:text-kargon-red ${isActive('/dashboard') ? 'active' : ''}`}>
+              <Link to="/dashboard" className={`nav-link font-medium ${
+                isScrolled || isDashboardOrAdmin ? 'text-kargon-dark' : 'text-white'
+              } hover:text-kargon-red ${isActive('/dashboard') ? 'active' : ''}`}>
                 DASHBOARD
               </Link>
             )}
             {isAdmin && (
-              <Link to="/admin" className={`nav-link font-medium ${isScrolled ? 'text-kargon-dark' : 'text-white'} hover:text-kargon-red ${isActive('/admin') ? 'active' : ''}`}>
+              <Link to="/admin" className={`nav-link font-medium ${
+                isScrolled || isDashboardOrAdmin ? 'text-kargon-dark' : 'text-white'
+              } hover:text-kargon-red ${isActive('/admin') ? 'active' : ''}`}>
                 ADMIN
               </Link>
             )}
@@ -74,21 +91,27 @@ const Navigation = () => {
               <div className="flex items-center gap-2">
                 {isAdmin && (
                   <Link to="/admin">
-                    <Button variant="ghost" className={`font-medium ${isScrolled ? 'text-kargon-dark hover:text-kargon-red' : 'text-white hover:text-white/80'} hover:bg-transparent`}>
+                    <Button variant="ghost" className={`font-medium ${
+                      isScrolled || isDashboardOrAdmin ? 'text-kargon-dark hover:text-kargon-red' : 'text-white hover:text-white/80'
+                    } hover:bg-transparent`}>
                       <Shield className="mr-2 h-5 w-5" />
                       ADMIN
                     </Button>
                   </Link>
                 )}
                 <Link to="/dashboard">
-                  <Button variant="ghost" className={`font-medium ${isScrolled ? 'text-kargon-dark hover:text-kargon-red' : 'text-white hover:text-white/80'} hover:bg-transparent`}>
+                  <Button variant="ghost" className={`font-medium ${
+                    isScrolled || isDashboardOrAdmin ? 'text-kargon-dark hover:text-kargon-red' : 'text-white hover:text-white/80'
+                  } hover:bg-transparent`}>
                     <UserCircle className="mr-2 h-5 w-5" />
                     MY ACCOUNT
                   </Button>
                 </Link>
                 <Button 
                   variant="ghost" 
-                  className={`font-medium ${isScrolled ? 'text-kargon-dark hover:text-kargon-red' : 'text-white hover:text-white/80'} hover:bg-transparent`}
+                  className={`font-medium ${
+                    isScrolled || isDashboardOrAdmin ? 'text-kargon-dark hover:text-kargon-red' : 'text-white hover:text-white/80'
+                  } hover:bg-transparent`}
                   onClick={() => signOut()}
                 >
                   <LogOut className="mr-2 h-5 w-5" />
@@ -98,7 +121,9 @@ const Navigation = () => {
             ) : (
               <>
                 <Link to="/login">
-                  <Button variant="ghost" className={`font-medium ${isScrolled ? 'text-kargon-dark hover:text-kargon-red' : 'text-white hover:text-white/80'} hover:bg-transparent`}>
+                  <Button variant="ghost" className={`font-medium ${
+                    isScrolled || isDashboardOrAdmin ? 'text-kargon-dark hover:text-kargon-red' : 'text-white hover:text-white/80'
+                  } hover:bg-transparent`}>
                     LOGIN
                   </Button>
                 </Link>
@@ -117,9 +142,9 @@ const Navigation = () => {
             className="md:hidden p-2"
           >
             {isMenuOpen ? (
-              <X className={isScrolled ? 'text-kargon-dark' : 'text-white'} size={24} />
+              <X className={isScrolled || isDashboardOrAdmin ? 'text-kargon-dark' : 'text-white'} size={24} />
             ) : (
-              <Menu className={isScrolled ? 'text-kargon-dark' : 'text-white'} size={24} />
+              <Menu className={isScrolled || isDashboardOrAdmin ? 'text-kargon-dark' : 'text-white'} size={24} />
             )}
           </button>
         </div>
