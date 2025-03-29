@@ -351,7 +351,7 @@ const SupportManagement = () => {
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   </div>
                 ) : filteredConversations.length > 0 ? (
-                  <ScrollArea className="h-[calc(100vh-350px)]">
+                  <ScrollArea className="h-[calc(100vh-350px)] md:h-[calc(100vh-300px)]">
                     <div className="space-y-1 p-2">
                       {filteredConversations.map((conversation) => {
                         const userName = `${conversation.user?.first_name || ''} ${conversation.user?.last_name || ''}`.trim();
@@ -368,12 +368,12 @@ const SupportManagement = () => {
                             <div className="flex justify-between items-start">
                               <div className="flex-1 truncate">
                                 <div className="font-medium truncate">{conversation.title}</div>
-                                <div className="text-sm text-muted-foreground flex items-center gap-1">
-                                  <User className="h-3 w-3" />
-                                  {userName || conversation.user?.email || 'Guest User'}
+                                <div className="text-sm text-muted-foreground flex items-center gap-1 truncate">
+                                  <User className="h-3 w-3 flex-shrink-0" />
+                                  <span className="truncate">{userName || conversation.user?.email || 'Guest User'}</span>
                                 </div>
                               </div>
-                              <Badge variant={conversation.status === 'open' ? "default" : "secondary"} className="ml-2">
+                              <Badge variant={conversation.status === 'open' ? "default" : "secondary"} className="ml-2 flex-shrink-0">
                                 {conversation.status}
                               </Badge>
                             </div>
@@ -408,7 +408,7 @@ const SupportManagement = () => {
               {selectedConversation ? (
                 <>
                   <CardHeader className="border-b pb-3 p-3">
-                    <div className="flex justify-between items-start">
+                    <div className="flex justify-between items-start flex-wrap gap-2">
                       <div className="flex items-center gap-2">
                         {isMobile && (
                           <Button 
@@ -422,7 +422,7 @@ const SupportManagement = () => {
                         )}
                         <div>
                           <CardTitle className="text-lg">{selectedConversation.title}</CardTitle>
-                          <CardDescription className="flex items-center gap-2 mt-1">
+                          <CardDescription className="flex items-center gap-2 mt-1 flex-wrap">
                             <span>Ticket #{selectedConversation.id.split('-')[0]}</span>
                             <span>•</span>
                             <span className="flex items-center gap-1">
@@ -461,13 +461,13 @@ const SupportManagement = () => {
                     </div>
                     <div className="mt-2 p-2 bg-muted rounded-md">
                       <p className="text-sm font-medium">Customer Information</p>
-                      <div className="grid grid-cols-2 gap-2 mt-1 text-sm">
-                        <div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1 text-sm">
+                        <div className="truncate">
                           <span className="text-muted-foreground">Name:</span> {
                             `${selectedConversation.user?.first_name || ''} ${selectedConversation.user?.last_name || ''}`.trim() || 'Guest User'
                           }
                         </div>
-                        <div>
+                        <div className="truncate">
                           <span className="text-muted-foreground">Email:</span> {selectedConversation.user?.email || selectedConversation.guest_email || 'N/A'}
                         </div>
                         <div>
@@ -490,7 +490,7 @@ const SupportManagement = () => {
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                       </div>
                     ) : (
-                      <ScrollArea className="h-[calc(100vh-380px)] p-3">
+                      <ScrollArea className="h-[calc(100vh-380px)] md:h-[calc(100vh-330px)] p-3">
                         {messages.length > 0 ? (
                           <div className="space-y-3">
                             {messages.map((message) => {
@@ -505,7 +505,7 @@ const SupportManagement = () => {
                                   className={`flex ${isAdmin ? 'justify-end' : 'justify-start'}`}
                                 >
                                   <div 
-                                    className={`max-w-[80%] rounded-lg p-2 ${
+                                    className={`max-w-[90%] md:max-w-[80%] rounded-lg p-2 ${
                                       isAdmin 
                                         ? 'bg-primary text-primary-foreground' 
                                         : 'bg-muted'
@@ -563,6 +563,16 @@ const SupportManagement = () => {
                   <p className="text-muted-foreground max-w-md">
                     Select a conversation from the list to view messages and respond to customer inquiries.
                   </p>
+                  {isMobile && (
+                    <Button 
+                      variant="outline" 
+                      className="mt-4" 
+                      onClick={handleBackToList}
+                    >
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      Back to ticket list
+                    </Button>
+                  )}
                 </div>
               )}
             </Card>

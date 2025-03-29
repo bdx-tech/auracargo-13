@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -11,12 +10,10 @@ const Navigation = () => {
   const location = useLocation();
   const { user, profile, signOut, isAdmin } = useAuth();
 
-  // Check if the current route is dashboard, admin, or auth pages
-  const isDashboardOrAdmin = location.pathname.includes('/dashboard') || location.pathname.includes('/admin');
-  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup' || location.pathname === '/forgot-password';
-  
-  // Apply dark text color for dashboard, admin, and auth pages
-  const shouldUseDarkText = isDashboardOrAdmin || isAuthPage;
+  // Only homepage should have white text when not scrolled
+  const isHomePage = location.pathname === '/';
+  // Always use dark text for all other pages
+  const shouldUseDarkText = !isHomePage || isScrolled;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -45,7 +42,7 @@ const Navigation = () => {
                 <Truck className="text-white" size={20} />
               </div>
               <span className={`ml-2 font-display font-bold text-xl ${
-                shouldUseDarkText ? 'text-kargon-dark' : isScrolled ? 'text-kargon-dark' : 'text-white'
+                shouldUseDarkText ? 'text-kargon-dark' : 'text-white'
               }`}>
                 AURACARGO
               </span>
@@ -55,35 +52,35 @@ const Navigation = () => {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-6">
             <Link to="/" className={`nav-link font-medium ${
-              shouldUseDarkText ? 'text-kargon-dark' : isScrolled ? 'text-kargon-dark' : 'text-white'
+              shouldUseDarkText ? 'text-kargon-dark' : 'text-white'
             } hover:text-kargon-red ${isActive('/') ? 'active' : ''}`}>
               HOME
             </Link>
             <Link to="/services" className={`nav-link font-medium ${
-              shouldUseDarkText ? 'text-kargon-dark' : isScrolled ? 'text-kargon-dark' : 'text-white'
+              shouldUseDarkText ? 'text-kargon-dark' : 'text-white'
             } hover:text-kargon-red ${isActive('/services') ? 'active' : ''}`}>
               SERVICES
             </Link>
             <Link to="/projects" className={`nav-link font-medium ${
-              shouldUseDarkText ? 'text-kargon-dark' : isScrolled ? 'text-kargon-dark' : 'text-white'
+              shouldUseDarkText ? 'text-kargon-dark' : 'text-white'
             } hover:text-kargon-red ${isActive('/projects') ? 'active' : ''}`}>
               PROJECTS
             </Link>
             <Link to="/contact" className={`nav-link font-medium ${
-              shouldUseDarkText ? 'text-kargon-dark' : isScrolled ? 'text-kargon-dark' : 'text-white'
+              shouldUseDarkText ? 'text-kargon-dark' : 'text-white'
             } hover:text-kargon-red ${isActive('/contact') ? 'active' : ''}`}>
               CONTACT
             </Link>
             {user && (
               <Link to="/dashboard" className={`nav-link font-medium ${
-                shouldUseDarkText ? 'text-kargon-dark' : isScrolled ? 'text-kargon-dark' : 'text-white'
+                shouldUseDarkText ? 'text-kargon-dark' : 'text-white'
               } hover:text-kargon-red ${isActive('/dashboard') ? 'active' : ''}`}>
                 DASHBOARD
               </Link>
             )}
             {isAdmin && (
               <Link to="/admin" className={`nav-link font-medium ${
-                shouldUseDarkText ? 'text-kargon-dark' : isScrolled ? 'text-kargon-dark' : 'text-white'
+                shouldUseDarkText ? 'text-kargon-dark' : 'text-white'
               } hover:text-kargon-red ${isActive('/admin') ? 'active' : ''}`}>
                 ADMIN
               </Link>
@@ -96,7 +93,7 @@ const Navigation = () => {
                 {isAdmin && (
                   <Link to="/admin">
                     <Button variant="ghost" className={`font-medium ${
-                      shouldUseDarkText ? 'text-kargon-dark hover:text-kargon-red' : isScrolled ? 'text-kargon-dark hover:text-kargon-red' : 'text-white hover:text-white/80'
+                      shouldUseDarkText ? 'text-kargon-dark hover:text-kargon-red' : 'text-white hover:text-white/80'
                     } hover:bg-transparent`}>
                       <Shield className="mr-2 h-5 w-5" />
                       ADMIN
@@ -105,7 +102,7 @@ const Navigation = () => {
                 )}
                 <Link to="/dashboard">
                   <Button variant="ghost" className={`font-medium ${
-                    shouldUseDarkText ? 'text-kargon-dark hover:text-kargon-red' : isScrolled ? 'text-kargon-dark hover:text-kargon-red' : 'text-white hover:text-white/80'
+                    shouldUseDarkText ? 'text-kargon-dark hover:text-kargon-red' : 'text-white hover:text-white/80'
                   } hover:bg-transparent`}>
                     <UserCircle className="mr-2 h-5 w-5" />
                     MY ACCOUNT
@@ -114,7 +111,7 @@ const Navigation = () => {
                 <Button 
                   variant="ghost" 
                   className={`font-medium ${
-                    shouldUseDarkText ? 'text-kargon-dark hover:text-kargon-red' : isScrolled ? 'text-kargon-dark hover:text-kargon-red' : 'text-white hover:text-white/80'
+                    shouldUseDarkText ? 'text-kargon-dark hover:text-kargon-red' : 'text-white hover:text-white/80'
                   } hover:bg-transparent`}
                   onClick={() => signOut()}
                 >
@@ -126,7 +123,7 @@ const Navigation = () => {
               <>
                 <Link to="/login">
                   <Button variant="ghost" className={`font-medium ${
-                    shouldUseDarkText ? 'text-kargon-dark hover:text-kargon-red' : isScrolled ? 'text-kargon-dark hover:text-kargon-red' : 'text-white hover:text-white/80'
+                    shouldUseDarkText ? 'text-kargon-dark hover:text-kargon-red' : 'text-white hover:text-white/80'
                   } hover:bg-transparent`}>
                     LOGIN
                   </Button>
@@ -146,9 +143,9 @@ const Navigation = () => {
             className="md:hidden p-2"
           >
             {isMenuOpen ? (
-              <X className={shouldUseDarkText ? 'text-kargon-dark' : isScrolled ? 'text-kargon-dark' : 'text-white'} size={24} />
+              <X className={shouldUseDarkText ? 'text-kargon-dark' : 'text-white'} size={24} />
             ) : (
-              <Menu className={shouldUseDarkText ? 'text-kargon-dark' : isScrolled ? 'text-kargon-dark' : 'text-white'} size={24} />
+              <Menu className={shouldUseDarkText ? 'text-kargon-dark' : 'text-white'} size={24} />
             )}
           </button>
         </div>

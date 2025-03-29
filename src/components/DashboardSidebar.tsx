@@ -41,10 +41,10 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center mb-2">
           <User className="h-8 w-8 text-gray-500" />
         </div>
-        <h3 className="font-medium">{profile?.first_name && profile?.last_name ? 
+        <h3 className="font-medium text-center">{profile?.first_name && profile?.last_name ? 
           `${profile.first_name} ${profile.last_name}` : 
           'Loading...'}</h3>
-        <p className="text-sm text-gray-500">Customer ID: {customerId}</p>
+        <p className="text-sm text-gray-500 text-center">Customer ID: {customerId}</p>
       </div>
       
       <div className="space-y-1">

@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Navigation from "@/components/Navigation";
@@ -278,7 +279,7 @@ const SupportChat = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {(!isMobile || (isMobile && showConversationList)) && (
             <div className="md:col-span-1">
-              <Card>
+              <Card className="h-full">
                 <CardHeader>
                   <CardTitle>Your Tickets</CardTitle>
                   <CardDescription>View your support tickets or create a new one</CardDescription>
@@ -289,7 +290,7 @@ const SupportChat = () => {
                       <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
                     </div>
                   ) : conversations.length > 0 ? (
-                    <ScrollArea className="h-[300px]">
+                    <ScrollArea className="h-[300px] md:h-[400px]">
                       <ul className="space-y-2">
                         {conversations.map((conversation) => (
                           <li key={conversation.id}>
@@ -298,8 +299,8 @@ const SupportChat = () => {
                               className="w-full justify-start"
                               onClick={() => handleSelectConversation(conversation)}
                             >
-                              <div className="text-left">
-                                <div className="font-medium">{conversation.title}</div>
+                              <div className="text-left w-full">
+                                <div className="font-medium truncate">{conversation.title}</div>
                                 <div className="text-xs text-gray-500">
                                   {format(new Date(conversation.updated_at), 'MMM d, yyyy · h:mm a')}
                                 </div>
@@ -350,14 +351,14 @@ const SupportChat = () => {
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="mr-2" 
+                            className="mr-2 -ml-2" 
                             onClick={handleBackToList}
                           >
                             <ArrowLeft className="h-4 w-4" />
                           </Button>
                         )}
                         <div>
-                          <CardTitle>{selectedConversation.title}</CardTitle>
+                          <CardTitle className="text-lg md:text-xl">{selectedConversation.title}</CardTitle>
                           <CardDescription>
                             Ticket #{selectedConversation.id.split('-')[0]}
                           </CardDescription>
@@ -365,7 +366,7 @@ const SupportChat = () => {
                       </div>
                     </CardHeader>
                     
-                    <ScrollArea className="flex-1 p-4 md:h-[400px] h-[60vh]">
+                    <ScrollArea className="flex-1 p-4 h-[calc(100vh-450px)] md:h-[400px]">
                       {isLoadingMessages ? (
                         <div className="flex justify-center p-4">
                           <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
