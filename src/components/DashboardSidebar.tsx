@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { 
   LayoutDashboard, 
@@ -45,7 +45,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   return (
     <div className={cn(
       "bg-white rounded-lg shadow-sm border border-gray-100 p-4 h-fit transition-all duration-300",
-      isCollapsed ? "w-20" : "w-full md:w-64"
+      isCollapsed ? "w-20" : "w-64"
     )}>
       <div className="flex justify-end mb-2">
         <Button

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import DashboardSidebar from "@/components/DashboardSidebar";
@@ -8,10 +9,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const isMobile = useIsMobile();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(isMobile);
   const { user, profile } = useAuth();
   const [dashboardData, setDashboardData] = useState({
     shipments: [],
@@ -20,6 +23,13 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [loadingTimeout, setLoadingTimeout] = useState(false);
   const { toast } = useToast();
+
+  // Update sidebar collapsed state when screen size changes
+  useEffect(() => {
+    if (isMobile !== undefined) {
+      setSidebarCollapsed(isMobile);
+    }
+  }, [isMobile]);
 
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
