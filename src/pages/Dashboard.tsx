@@ -9,12 +9,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import LoadingSpinner from "@/components/LoadingSpinner";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
-  const isMobile = useIsMobile();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(isMobile);
   const { user, profile } = useAuth();
   const [dashboardData, setDashboardData] = useState({
     shipments: [],
@@ -24,18 +21,8 @@ const Dashboard = () => {
   const [loadingTimeout, setLoadingTimeout] = useState(false);
   const { toast } = useToast();
 
-  // Update sidebar collapsed state when screen size changes
   useEffect(() => {
-    if (isMobile !== undefined) {
-      setSidebarCollapsed(isMobile);
-    }
-  }, [isMobile]);
-
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-  };
-
-  useEffect(() => {
+    // Set a timeout to show a message if loading takes too long
     const timeoutId = setTimeout(() => {
       setLoadingTimeout(true);
     }, 5000);
@@ -46,28 +33,33 @@ const Dashboard = () => {
       setLoading(true);
       
       try {
+        // Fetch shipments with a timeout
         const shipmentsPromise = supabase
           .from('shipments')
           .select('*')
           .eq('user_id', user.id);
           
+        // Fetch notifications with a timeout
         const notificationsPromise = supabase
           .from('notifications')
           .select('*')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
           
+        // Use Promise.allSettled to handle both requests even if one fails
         const [shipmentsResult, notificationsResult] = await Promise.allSettled([
           shipmentsPromise,
           notificationsPromise
         ]);
         
+        // Process shipments result
         if (shipmentsResult.status === 'fulfilled') {
           const { data: shipments, error: shipmentsError } = shipmentsResult.value;
           if (shipmentsError) throw shipmentsError;
           setDashboardData(prev => ({ ...prev, shipments: shipments || [] }));
         }
         
+        // Process notifications result
         if (notificationsResult.status === 'fulfilled') {
           const { data: notifications, error: notificationsError } = notificationsResult.value;
           if (notificationsError) throw notificationsError;
@@ -88,6 +80,7 @@ const Dashboard = () => {
     
     fetchDashboardData();
     
+    // Set up real-time listeners
     const shipmentChannel = supabase
       .channel('shipments-changes')
       .on('postgres_changes', 
@@ -163,14 +156,14 @@ const Dashboard = () => {
       
       <div className="container mx-auto px-4 py-24">
         <div className="flex flex-col md:flex-row gap-6">
+          {/* Sidebar */}
           <DashboardSidebar 
             activeTab={activeTab} 
             setActiveTab={setActiveTab} 
             profile={profile}
-            isCollapsed={sidebarCollapsed}
-            toggleCollapse={toggleSidebar}
           />
           
+          {/* Main Content */}
           <div className="flex-1">
             {activeTab === "overview" && 
               <OverviewPage 
