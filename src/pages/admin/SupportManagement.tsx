@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -352,17 +351,17 @@ const SupportManagement = () => {
                   </div>
                 ) : filteredConversations.length > 0 ? (
                   <ScrollArea className="h-[calc(100vh-350px)] md:h-[calc(100vh-300px)]">
-                    <div className="space-y-1 p-2">
+                    <div className="space-y-2 p-3">
                       {filteredConversations.map((conversation) => {
                         const userName = `${conversation.user?.first_name || ''} ${conversation.user?.last_name || ''}`.trim();
                         return (
                           <div 
                             key={conversation.id}
                             onClick={() => handleSelectConversation(conversation)}
-                            className={`p-2 rounded-md cursor-pointer transition-colors ${
+                            className={`p-3 border rounded-lg cursor-pointer transition-colors ${
                               selectedConversation?.id === conversation.id 
-                                ? 'bg-primary/10' 
-                                : 'hover:bg-muted'
+                                ? 'border-primary bg-primary/5' 
+                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                             }`}
                           >
                             <div className="flex justify-between items-start">
@@ -505,9 +504,9 @@ const SupportManagement = () => {
                                   className={`flex ${isAdmin ? 'justify-end' : 'justify-start'}`}
                                 >
                                   <div 
-                                    className={`max-w-[90%] md:max-w-[80%] rounded-lg p-2 ${
+                                    className={`max-w-[90%] md:max-w-[80%] rounded-lg p-3 ${
                                       isAdmin 
-                                        ? 'bg-primary text-primary-foreground' 
+                                        ? 'bg-kargon-red text-white' 
                                         : 'bg-muted'
                                     }`}
                                   >
@@ -545,6 +544,7 @@ const SupportManagement = () => {
                       />
                       <Button 
                         type="submit" 
+                        className="bg-kargon-red hover:bg-kargon-red/90"
                         disabled={!newMessage.trim() || isSendingMessage || selectedConversation.status === 'closed'}
                       >
                         {isSendingMessage ? (

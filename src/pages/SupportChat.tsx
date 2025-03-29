@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Send, ArrowLeft, Loader2 } from "lucide-react";
+import { Send, ArrowLeft, Loader2, Clock, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -20,6 +20,7 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 const SupportChat = () => {
   const { user, profile } = useAuth();
@@ -280,9 +281,9 @@ const SupportChat = () => {
           {(!isMobile || (isMobile && showConversationList)) && (
             <div className="md:col-span-1">
               <Card className="h-full">
-                <CardHeader>
-                  <CardTitle>Your Tickets</CardTitle>
-                  <CardDescription>View your support tickets or create a new one</CardDescription>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-2xl font-bold">Your Tickets</CardTitle>
+                  <CardDescription className="text-base">View your support tickets or create a new one</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {isLoadingConversations ? (
@@ -291,33 +292,31 @@ const SupportChat = () => {
                     </div>
                   ) : conversations.length > 0 ? (
                     <ScrollArea className="h-[300px] md:h-[400px]">
-                      <ul className="space-y-2">
+                      <div className="space-y-3 pr-2">
                         {conversations.map((conversation) => (
-                          <li key={conversation.id}>
-                            <Button
-                              variant={selectedConversation?.id === conversation.id ? "default" : "outline"}
-                              className="w-full justify-start"
-                              onClick={() => handleSelectConversation(conversation)}
-                            >
-                              <div className="text-left w-full">
-                                <div className="font-medium truncate">{conversation.title}</div>
-                                <div className="text-xs text-gray-500">
-                                  {format(new Date(conversation.updated_at), 'MMM d, yyyy · h:mm a')}
-                                </div>
-                                <div className="text-xs mt-1">
-                                  <span className={`px-2 py-0.5 rounded-full text-xs ${
-                                    conversation.status === 'open' 
-                                      ? 'bg-green-100 text-green-800' 
-                                      : 'bg-gray-100 text-gray-800'
-                                  }`}>
-                                    {conversation.status}
-                                  </span>
-                                </div>
-                              </div>
-                            </Button>
-                          </li>
+                          <div 
+                            key={conversation.id}
+                            onClick={() => handleSelectConversation(conversation)}
+                            className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                              selectedConversation?.id === conversation.id 
+                                ? 'border-primary bg-primary/5' 
+                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            <div className="font-medium text-lg mb-1">{conversation.title}</div>
+                            <div className="text-sm text-gray-500 mb-2">
+                              {format(new Date(conversation.updated_at), 'MMM d, yyyy · h:mm a')}
+                            </div>
+                            <Badge className={`${
+                              conversation.status === 'open' 
+                                ? 'bg-green-100 text-green-800 hover:bg-green-100' 
+                                : 'bg-gray-100 text-gray-800 hover:bg-gray-100'
+                            }`}>
+                              {conversation.status}
+                            </Badge>
+                          </div>
                         ))}
-                      </ul>
+                      </div>
                     </ScrollArea>
                   ) : (
                     <p className="text-gray-500 text-center py-4">No tickets yet</p>
@@ -325,7 +324,7 @@ const SupportChat = () => {
                 </CardContent>
                 <CardFooter>
                   <Button 
-                    className="w-full" 
+                    className="w-full bg-kargon-red hover:bg-kargon-red/90 text-white"
                     onClick={() => {
                       setSelectedConversation(null);
                       if (isMobile) {
@@ -358,10 +357,24 @@ const SupportChat = () => {
                           </Button>
                         )}
                         <div>
-                          <CardTitle className="text-lg md:text-xl">{selectedConversation.title}</CardTitle>
-                          <CardDescription>
-                            Ticket #{selectedConversation.id.split('-')[0]}
-                          </CardDescription>
+                          <CardTitle className="text-xl md:text-2xl">{selectedConversation.title}</CardTitle>
+                          <div className="flex items-center mt-2">
+                            <Badge className={`mr-2 ${
+                              selectedConversation.status === 'open' 
+                                ? 'bg-green-100 text-green-800 hover:bg-green-100' 
+                                : 'bg-gray-100 text-gray-800 hover:bg-gray-100'
+                            }`}>
+                              {selectedConversation.status === 'open' ? (
+                                <Clock className="h-3 w-3 mr-1 inline" />
+                              ) : (
+                                <CheckCircle className="h-3 w-3 mr-1 inline" />
+                              )}
+                              {selectedConversation.status}
+                            </Badge>
+                            <CardDescription className="text-sm">
+                              Ticket #{selectedConversation.id.split('-')[0]}
+                            </CardDescription>
+                          </div>
                         </div>
                       </div>
                     </CardHeader>
@@ -387,7 +400,7 @@ const SupportChat = () => {
                                 <div 
                                   className={`max-w-[80%] rounded-lg p-3 ${
                                     isCurrentUser 
-                                      ? 'bg-blue-500 text-white' 
+                                      ? 'bg-kargon-red text-white' 
                                       : message.is_admin 
                                         ? 'bg-indigo-100 text-gray-800' 
                                         : 'bg-gray-100 text-gray-800'
@@ -425,6 +438,7 @@ const SupportChat = () => {
                         <Button 
                           type="submit" 
                           disabled={!newMessage.trim() || isSendingMessage}
+                          className="bg-kargon-red hover:bg-kargon-red/90"
                         >
                           {isSendingMessage ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -449,8 +463,8 @@ const SupportChat = () => {
                           Back to tickets
                         </Button>
                       )}
-                      <CardTitle>Create a New Support Ticket</CardTitle>
-                      <CardDescription>
+                      <CardTitle className="text-2xl font-bold">Create a New Support Ticket</CardTitle>
+                      <CardDescription className="text-base">
                         Describe your issue and our support team will assist you
                       </CardDescription>
                     </CardHeader>
@@ -483,7 +497,7 @@ const SupportChat = () => {
                         </div>
                         <Button 
                           type="submit" 
-                          className="w-full" 
+                          className="w-full bg-kargon-red hover:bg-kargon-red/90" 
                           disabled={isCreatingConversation}
                         >
                           {isCreatingConversation ? (

@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { Badge } from "@/components/ui/badge";
 
 const ChatBubble = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -61,7 +61,6 @@ const ChatBubble = () => {
     
     setIsLoading(true);
     try {
-      // Get most recent open conversation, if any
       const { data, error } = await supabase
         .from('support_conversations')
         .select('*')
@@ -106,7 +105,6 @@ const ChatBubble = () => {
       
       setRecentMessages(data || []);
       
-      // Mark messages as read
       await supabase
         .from('support_messages')
         .update({ read: true })
@@ -131,7 +129,6 @@ const ChatBubble = () => {
     setIsSending(true);
     
     try {
-      // Send the message
       const { error } = await supabase
         .from('support_messages')
         .insert({
@@ -143,7 +140,6 @@ const ChatBubble = () => {
         
       if (error) throw error;
       
-      // Update the conversation's updated_at timestamp
       await supabase
         .from('support_conversations')
         .update({ updated_at: new Date().toISOString() })
@@ -167,7 +163,6 @@ const ChatBubble = () => {
     setIsSending(true);
     
     try {
-      // Create a new conversation
       const { data: conversationData, error: conversationError } = await supabase
         .from('support_conversations')
         .insert({
@@ -179,7 +174,6 @@ const ChatBubble = () => {
 
       if (conversationError) throw conversationError;
       
-      // Add the initial message
       if (conversationData) {
         const { error: messageError } = await supabase
           .from('support_messages')
@@ -216,11 +210,10 @@ const ChatBubble = () => {
 
   return (
     <>
-      {/* Chat Bubble Button */}
       <div className="fixed bottom-6 right-6 z-50">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="bg-primary text-white rounded-full p-4 shadow-lg hover:bg-primary/90 transition-colors"
+          className="bg-kargon-red text-white rounded-full p-4 shadow-lg hover:bg-kargon-red/90 transition-colors"
           aria-label="Open support chat"
         >
           {isOpen ? (
@@ -231,11 +224,10 @@ const ChatBubble = () => {
         </button>
       </div>
 
-      {/* Chat Window */}
       {isOpen && (
         <div className="fixed bottom-24 right-6 z-50 w-80 sm:w-96 shadow-xl transition-all animate-scale-in">
-          <Card className="w-full">
-            <CardHeader className="bg-primary text-white rounded-t-lg p-4 flex flex-row justify-between items-center">
+          <Card className="w-full border border-gray-200">
+            <CardHeader className="bg-kargon-red text-white rounded-t-lg p-4 flex flex-row justify-between items-center">
               <CardTitle className="text-lg flex items-center">
                 <MessageSquare className="h-5 w-5 mr-2" />
                 Customer Support
@@ -243,7 +235,7 @@ const ChatBubble = () => {
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="text-white hover:bg-primary/80" 
+                className="text-white hover:bg-kargon-red/80" 
                 onClick={() => setIsOpen(false)}
               >
                 <X className="h-4 w-4" />
@@ -254,7 +246,7 @@ const ChatBubble = () => {
               <ScrollArea className="h-64 p-4">
                 {isLoading ? (
                   <div className="flex justify-center items-center h-full">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <Loader2 className="h-8 w-8 animate-spin text-kargon-red" />
                   </div>
                 ) : recentMessages.length > 0 ? (
                   <div className="space-y-4">
@@ -266,9 +258,9 @@ const ChatBubble = () => {
                           className={`flex ${isCustomer ? 'justify-end' : 'justify-start'}`}
                         >
                           <div 
-                            className={`max-w-[80%] rounded-lg p-2 ${
+                            className={`max-w-[80%] rounded-lg p-3 ${
                               isCustomer 
-                                ? 'bg-primary text-white' 
+                                ? 'bg-kargon-red text-white' 
                                 : 'bg-gray-100 text-gray-800'
                             }`}
                           >
@@ -311,6 +303,7 @@ const ChatBubble = () => {
                     type="submit" 
                     size="icon"
                     disabled={!message.trim() || isSending}
+                    className="bg-kargon-red hover:bg-kargon-red/90"
                   >
                     {isSending ? (
                       <Loader2 className="h-4 w-4 animate-spin" />

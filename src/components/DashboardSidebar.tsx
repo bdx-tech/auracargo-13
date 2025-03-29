@@ -64,7 +64,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         
         <Button
           variant="ghost"
-          className="w-full justify-start"
+          className="w-full justify-start hover:bg-gray-100"
           onClick={() => navigate('/support')}
         >
           <HeadphonesIcon className="mr-2 h-4 w-4" />
