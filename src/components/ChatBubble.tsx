@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 
 const ChatBubble = () => {
@@ -79,6 +80,11 @@ const ChatBubble = () => {
       }
     } catch (error: any) {
       console.error('Error fetching recent conversation:', error);
+      toast({
+        variant: "destructive",
+        title: "Connection error",
+        description: "Could not load your recent conversations",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -113,6 +119,11 @@ const ChatBubble = () => {
         .eq('read', false);
     } catch (error: any) {
       console.error('Error fetching messages:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Could not load messages",
+      });
     }
   };
 
@@ -146,6 +157,12 @@ const ChatBubble = () => {
         .eq('id', activeConversation.id);
       
       setMessage("");
+      
+      toast({
+        variant: "success",
+        title: "Message sent",
+        description: "Your message has been delivered",
+      });
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -189,6 +206,12 @@ const ChatBubble = () => {
         setActiveConversation(conversationData);
         setMessage("");
         fetchMessages(conversationData.id);
+        
+        toast({
+          variant: "info",
+          title: "Conversation started",
+          description: "We'll respond to your message soon",
+        });
       }
     } catch (error: any) {
       toast({
@@ -226,8 +249,8 @@ const ChatBubble = () => {
 
       {isOpen && (
         <div className="fixed bottom-24 right-6 z-50 w-80 sm:w-96 shadow-xl transition-all animate-scale-in">
-          <Card className="w-full border border-gray-200">
-            <CardHeader className="bg-kargon-red text-white rounded-t-lg p-4 flex flex-row justify-between items-center">
+          <Card className="w-full border border-gray-200 backdrop-blur-sm bg-white/90 rounded-xl">
+            <CardHeader className="bg-kargon-red text-white rounded-t-xl p-4 flex flex-row justify-between items-center">
               <CardTitle className="text-lg flex items-center">
                 <MessageSquare className="h-5 w-5 mr-2" />
                 Customer Support
@@ -261,7 +284,7 @@ const ChatBubble = () => {
                             className={`max-w-[80%] rounded-lg p-3 ${
                               isCustomer 
                                 ? 'bg-kargon-red text-white' 
-                                : 'bg-gray-100 text-gray-800'
+                                : 'bg-gray-100/90 backdrop-blur-sm text-gray-800'
                             }`}
                           >
                             <div className="break-words text-sm">
