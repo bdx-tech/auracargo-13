@@ -1,220 +1,269 @@
-import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { Button } from "@/components/ui/button";
-import { Menu, X, Truck, UserCircle, Shield, LogOut } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import useMobile from "@/hooks/use-mobile";
+import { Menu, X, LogIn } from 'lucide-react';
 
 const Navigation = () => {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, signOut, isAdmin } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
-  const { user, profile, signOut, isAdmin } = useAuth();
-
-  // Only homepage should have white text when not scrolled
-  const isHomePage = location.pathname === '/';
-  // Always use dark text for all other pages
-  const shouldUseDarkText = !isHomePage || isScrolled;
+  const isMobile = useMobile();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
+      if (window.scrollY > 10) {
+        setScrolled(true);
+      } else {
+        setScrolled(false);
+      }
     };
 
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
-  const isActive = (path: string) => {
-    return location.pathname === path;
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
   };
 
-  return (
-    <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? "bg-white shadow-md bg-opacity-95 py-3" : "bg-transparent py-5"
-      }`}
-    >
-      <div className="container mx-auto px-4 md:px-6">
-        <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="flex items-center">
-              <div className="h-10 w-10 bg-kargon-red rounded-full flex items-center justify-center">
-                <Truck className="text-white" size={20} />
-              </div>
-              <span className={`ml-2 font-display font-bold text-xl ${
-                shouldUseDarkText ? 'text-kargon-dark' : 'text-white'
-              }`}>
-                AURACARGO
-              </span>
-            </div>
-          </Link>
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-6">
-            <Link to="/" className={`nav-link font-medium ${
-              shouldUseDarkText ? 'text-kargon-dark' : 'text-white'
-            } hover:text-kargon-red ${isActive('/') ? 'active' : ''}`}>
-              HOME
-            </Link>
-            <Link to="/services" className={`nav-link font-medium ${
-              shouldUseDarkText ? 'text-kargon-dark' : 'text-white'
-            } hover:text-kargon-red ${isActive('/services') ? 'active' : ''}`}>
-              SERVICES
-            </Link>
-            <Link to="/projects" className={`nav-link font-medium ${
-              shouldUseDarkText ? 'text-kargon-dark' : 'text-white'
-            } hover:text-kargon-red ${isActive('/projects') ? 'active' : ''}`}>
-              PROJECTS
-            </Link>
-            <Link to="/contact" className={`nav-link font-medium ${
-              shouldUseDarkText ? 'text-kargon-dark' : 'text-white'
-            } hover:text-kargon-red ${isActive('/contact') ? 'active' : ''}`}>
-              CONTACT
-            </Link>
-            {user && (
-              <Link to="/dashboard" className={`nav-link font-medium ${
-                shouldUseDarkText ? 'text-kargon-dark' : 'text-white'
-              } hover:text-kargon-red ${isActive('/dashboard') ? 'active' : ''}`}>
-                DASHBOARD
-              </Link>
-            )}
-            {isAdmin && (
-              <Link to="/admin" className={`nav-link font-medium ${
-                shouldUseDarkText ? 'text-kargon-dark' : 'text-white'
-              } hover:text-kargon-red ${isActive('/admin') ? 'active' : ''}`}>
-                ADMIN
-              </Link>
-            )}
-          </nav>
+  const navbarClasses = `
+    fixed top-0 left-0 right-0 z-50 px-4 md:px-8 lg:px-16 py-4 transition-all duration-300
+    ${scrolled || location.pathname !== '/' ? 'bg-white shadow-md' : 'bg-transparent'}
+  `;
 
-          <div className="hidden md:flex items-center gap-4">
-            {user ? (
-              <div className="flex items-center gap-2">
-                {isAdmin && (
-                  <Link to="/admin">
-                    <Button variant="ghost" className={`font-medium ${
-                      shouldUseDarkText ? 'text-kargon-dark hover:text-kargon-red' : 'text-white hover:text-white/80'
-                    } hover:bg-transparent`}>
-                      <Shield className="mr-2 h-5 w-5" />
-                      ADMIN
-                    </Button>
-                  </Link>
-                )}
-                <Link to="/dashboard">
-                  <Button variant="ghost" className={`font-medium ${
-                    shouldUseDarkText ? 'text-kargon-dark hover:text-kargon-red' : 'text-white hover:text-white/80'
-                  } hover:bg-transparent`}>
-                    <UserCircle className="mr-2 h-5 w-5" />
-                    MY ACCOUNT
-                  </Button>
-                </Link>
-                <Button 
-                  variant="ghost" 
-                  className={`font-medium ${
-                    shouldUseDarkText ? 'text-kargon-dark hover:text-kargon-red' : 'text-white hover:text-white/80'
-                  } hover:bg-transparent`}
-                  onClick={() => signOut()}
-                >
-                  <LogOut className="mr-2 h-5 w-5" />
-                  LOGOUT
-                </Button>
-              </div>
-            ) : (
-              <>
-                <Link to="/login">
-                  <Button variant="ghost" className={`font-medium ${
-                    shouldUseDarkText ? 'text-kargon-dark hover:text-kargon-red' : 'text-white hover:text-white/80'
-                  } hover:bg-transparent`}>
-                    LOGIN
-                  </Button>
-                </Link>
-                <Link to="/signup">
-                  <Button className="bg-kargon-red hover:bg-kargon-red/90 text-white rounded-md">
-                    GET QUOTE
-                  </Button>
-                </Link>
-              </>
-            )}
-          </div>
+  const linkClasses = `
+    font-medium hover:text-primary transition-colors duration-200
+    ${scrolled || location.pathname !== '/' ? 'text-gray-700' : 'text-gray-100'}
+  `;
 
-          {/* Mobile Menu Button */}
-          <button 
-            onClick={() => setIsMenuOpen(!isMenuOpen)} 
-            className="md:hidden p-2"
-          >
-            {isMenuOpen ? (
-              <X className={shouldUseDarkText ? 'text-kargon-dark' : 'text-white'} size={24} />
-            ) : (
-              <Menu className={shouldUseDarkText ? 'text-kargon-dark' : 'text-white'} size={24} />
-            )}
-          </button>
-        </div>
+  const renderDesktopNav = () => (
+    <div className="hidden lg:flex w-full items-center justify-between">
+      {/* Logo */}
+      <Link to="/" className="flex items-center space-x-2">
+        <img 
+          src="/lovable-uploads/1e21aeaa-540f-4dde-8a28-4ab829e83c16.png" 
+          alt="AuraCargo Logo" 
+          className="h-10 w-auto" 
+        />
+        <span className={`font-bold text-xl ${scrolled || location.pathname !== '/' ? 'text-gray-800' : 'text-white'}`}>
+          AuraCargo
+        </span>
+      </Link>
+
+      {/* Navigation Links */}
+      <div className="flex items-center space-x-8">
+        <Link to="/" className={linkClasses}>Home</Link>
+        <Link to="/services" className={linkClasses}>Services</Link>
+        <Link to="/projects" className={linkClasses}>Projects</Link>
+        <Link to="/track" className={linkClasses}>Track Shipment</Link>
+        <Link to="/contact" className={linkClasses}>Contact</Link>
       </div>
 
-      {/* Mobile Navigation */}
-      {isMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-white shadow-md py-4 animate-fade-in">
-          <div className="container mx-auto px-4">
-            <nav className="flex flex-col space-y-4">
-              <Link to="/" className={`font-medium text-kargon-dark hover:text-kargon-red py-2 ${isActive('/') ? 'text-kargon-red' : ''}`} onClick={() => setIsMenuOpen(false)}>
-                HOME
+      {/* Auth Buttons */}
+      <div className="flex items-center space-x-4">
+        {user ? (
+          <>
+            {isAdmin && (
+              <Button 
+                variant="outline" 
+                className="border-primary text-primary hover:bg-primary hover:text-white"
+                onClick={() => navigate('/admin')}
+              >
+                Admin Dashboard
+              </Button>
+            )}
+            <Button 
+              variant="default" 
+              onClick={() => navigate('/dashboard')}
+            >
+              Dashboard
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={handleSignOut}
+            >
+              Sign Out
+            </Button>
+          </>
+        ) : (
+          <>
+            <Link to="/login">
+              <Button variant="ghost" className={scrolled || location.pathname !== '/' ? 'text-gray-700' : 'text-white'}>
+                Log In
+              </Button>
+            </Link>
+            <Link to="/signup">
+              <Button className="bg-primary text-white hover:bg-primary/90">
+                Sign Up
+              </Button>
+            </Link>
+            <Link to="/admin-signup">
+              <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-white">
+                <LogIn size={16} className="mr-2" />
+                Admin Access
+              </Button>
+            </Link>
+          </>
+        )}
+      </div>
+    </div>
+  );
+
+  const renderMobileNav = () => (
+    <div className="lg:hidden flex w-full items-center justify-between">
+      <Link to="/" className="flex items-center space-x-2">
+        <img 
+          src="/lovable-uploads/1e21aeaa-540f-4dde-8a28-4ab829e83c16.png" 
+          alt="AuraCargo Logo" 
+          className="h-8 w-auto" 
+        />
+        <span className={`font-bold text-lg ${scrolled || location.pathname !== '/' ? 'text-gray-800' : 'text-white'}`}>
+          AuraCargo
+        </span>
+      </Link>
+
+      <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+        <SheetTrigger asChild>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={toggleMenu}
+            className={scrolled || location.pathname !== '/' ? 'text-gray-700' : 'text-white'}
+          >
+            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="right" className="w-[300px] sm:w-[380px]">
+          <nav className="flex flex-col h-full py-6">
+            <div className="space-y-4 mb-8">
+              <Link 
+                to="/" 
+                className="block py-2 text-lg font-medium hover:text-primary"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Home
               </Link>
-              <Link to="/services" className={`font-medium text-kargon-dark hover:text-kargon-red py-2 ${isActive('/services') ? 'text-kargon-red' : ''}`} onClick={() => setIsMenuOpen(false)}>
-                SERVICES
+              <Link 
+                to="/services" 
+                className="block py-2 text-lg font-medium hover:text-primary"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Services
               </Link>
-              <Link to="/projects" className={`font-medium text-kargon-dark hover:text-kargon-red py-2 ${isActive('/projects') ? 'text-kargon-red' : ''}`} onClick={() => setIsMenuOpen(false)}>
-                PROJECTS
+              <Link 
+                to="/projects" 
+                className="block py-2 text-lg font-medium hover:text-primary"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Projects
               </Link>
-              <Link to="/contact" className={`font-medium text-kargon-dark hover:text-kargon-red py-2 ${isActive('/contact') ? 'text-kargon-red' : ''}`} onClick={() => setIsMenuOpen(false)}>
-                CONTACT
+              <Link 
+                to="/track" 
+                className="block py-2 text-lg font-medium hover:text-primary"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Track Shipment
               </Link>
-              {user && (
-                <Link to="/dashboard" className={`font-medium text-kargon-dark hover:text-kargon-red py-2 ${isActive('/dashboard') ? 'text-kargon-red' : ''}`} onClick={() => setIsMenuOpen(false)}>
-                  DASHBOARD
-                </Link>
-              )}
-              {isAdmin && (
-                <Link to="/admin" className={`font-medium text-kargon-dark hover:text-kargon-red py-2 ${isActive('/admin') ? 'text-kargon-red' : ''}`} onClick={() => setIsMenuOpen(false)}>
-                  ADMIN
-                </Link>
-              )}
-              
+              <Link 
+                to="/contact" 
+                className="block py-2 text-lg font-medium hover:text-primary"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Contact
+              </Link>
+            </div>
+            
+            <div className="mt-auto space-y-4">
               {user ? (
-                <div className="pt-2">
+                <>
                   {isAdmin && (
-                    <Link to="/admin" className="font-medium text-kargon-dark hover:text-kargon-red py-2 flex items-center" onClick={() => setIsMenuOpen(false)}>
-                      <Shield className="mr-2 h-5 w-5" /> ADMIN PANEL
-                    </Link>
+                    <Button 
+                      className="w-full justify-center"
+                      onClick={() => {
+                        navigate('/admin');
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      Admin Dashboard
+                    </Button>
                   )}
-                  <Link to="/dashboard" className="font-medium text-kargon-dark hover:text-kargon-red py-2 flex items-center" onClick={() => setIsMenuOpen(false)}>
-                    <UserCircle className="mr-2 h-5 w-5" /> MY ACCOUNT
-                  </Link>
-                  <button 
-                    className="font-medium text-kargon-dark hover:text-kargon-red py-2 flex items-center" 
+                  <Button 
+                    className="w-full justify-center"
                     onClick={() => {
+                      navigate('/dashboard');
                       setIsMenuOpen(false);
-                      signOut();
                     }}
                   >
-                    <LogOut className="mr-2 h-5 w-5" /> LOGOUT
-                  </button>
-                </div>
+                    Dashboard
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-center"
+                    onClick={() => {
+                      handleSignOut();
+                      setIsMenuOpen(false);
+                    }}
+                  >
+                    Sign Out
+                  </Button>
+                </>
               ) : (
                 <>
-                  <Link to="/login" className="font-medium text-kargon-dark hover:text-kargon-red py-2" onClick={() => setIsMenuOpen(false)}>
-                    LOGIN
-                  </Link>
-                  <Link to="/signup" onClick={() => setIsMenuOpen(false)}>
-                    <Button className="bg-kargon-red hover:bg-kargon-red/90 text-white w-full rounded-md mt-4">
-                      GET QUOTE
-                    </Button>
-                  </Link>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-center"
+                    onClick={() => {
+                      navigate('/login');
+                      setIsMenuOpen(false);
+                    }}
+                  >
+                    Log In
+                  </Button>
+                  <Button 
+                    className="w-full justify-center"
+                    onClick={() => {
+                      navigate('/signup');
+                      setIsMenuOpen(false);
+                    }}
+                  >
+                    Sign Up
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-center border-primary text-primary hover:bg-primary hover:text-white"
+                    onClick={() => {
+                      navigate('/admin-signup');
+                      setIsMenuOpen(false);
+                    }}
+                  >
+                    <LogIn size={16} className="mr-2" />
+                    Admin Access
+                  </Button>
                 </>
               )}
-            </nav>
-          </div>
-        </div>
-      )}
+            </div>
+          </nav>
+        </SheetContent>
+      </Sheet>
+    </div>
+  );
+
+  return (
+    <header className={navbarClasses}>
+      {isMobile ? renderMobileNav() : renderDesktopNav()}
     </header>
   );
 };

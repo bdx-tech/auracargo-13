@@ -1,163 +1,143 @@
 
-import { useState, useEffect } from "react";
-import { Link, Navigate, useLocation } from "react-router-dom";
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import Navigation from "@/components/Navigation";
-import { useAuth } from "@/contexts/AuthContext";
-import { Truck, Loader } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Eye, EyeOff, LogIn } from 'lucide-react';
 
 const Login = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [loginAttemptTime, setLoginAttemptTime] = useState<number | null>(null);
-  const { signIn, user, isLoading: authLoading } = useAuth();
-  const location = useLocation();
+  const navigate = useNavigate();
+  const { signIn, user, isAdmin } = useAuth();
+  const { toast } = useToast();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  // Clear error when inputs change
   useEffect(() => {
-    if (error) setError("");
-  }, [email, password]);
-
-  // Track long-running login attempts
-  useEffect(() => {
-    if (isLoading && !loginAttemptTime) {
-      setLoginAttemptTime(Date.now());
+    if (user) {
+      if (isAdmin) {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
     }
-
-    if (!isLoading) {
-      setLoginAttemptTime(null);
-    }
-
-    // If login is taking too long, show a helpful message
-    let timeoutId: number;
-    if (isLoading && loginAttemptTime) {
-      timeoutId = window.setTimeout(() => {
-        if (isLoading) {
-          setError("Login is taking longer than expected. Please try again.");
-          setIsLoading(false);
-        }
-      }, 10000); // 10 second timeout
-    }
-
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [isLoading, loginAttemptTime]);
-
-  // If user is already logged in, redirect to dashboard
-  if (user) {
-    const from = location.state?.from?.pathname || "/dashboard";
-    return <Navigate to={from} />;
-  }
+  }, [user, isAdmin, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setIsLoading(true);
-    console.log("Login attempt started");
-    
-    if (!email || !password) {
-      setError("Please enter both email and password");
-      setIsLoading(false);
-      return;
-    }
-    
+    setLoading(true);
+
     try {
-      await signIn(email, password);
-      console.log("Login successful");
+      const { error } = await signIn(email, password);
+      
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Login Successful",
+        description: "You have been logged in successfully.",
+      });
     } catch (error: any) {
-      console.error("Login error:", error.message);
-      setError(error.message);
+      console.error("Login error:", error);
+      toast({
+        title: "Login Failed",
+        description: error.message || "Failed to sign in. Please check your credentials.",
+        variant: "destructive"
+      });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
+  const toggleShowPassword = () => {
+    setShowPassword(!showPassword);
+  };
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navigation />
-      
-      <div className="flex-grow flex items-center justify-center py-20">
-        <div className="relative bg-white/90 backdrop-blur-sm shadow-lg rounded-lg p-8 w-full max-w-md border border-gray-200">
-          <div className="absolute -top-5 left-1/2 transform -translate-x-1/2">
-            <div className="h-10 w-10 bg-kargon-red rounded-full flex items-center justify-center">
-              <Truck className="text-white" size={18} />
-            </div>
-          </div>
-          
-          <h2 className="text-2xl font-bold text-center mb-6 mt-4 text-kargon-dark">Login to Your Account</h2>
-          
-          {error && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          
-          {authLoading && (
-            <Alert className="mb-4 bg-blue-50 text-blue-800 border-blue-200">
-              <AlertDescription>Initializing authentication...</AlertDescription>
-            </Alert>
-          )}
-          
+    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold text-center">Login</CardTitle>
+          <CardDescription className="text-center">
+            Enter your email and password to access your account
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isLoading}
+              <Input 
+                id="email" 
+                type="email" 
+                placeholder="your@email.com" 
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)} 
+                required 
               />
             </div>
-            
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <Label htmlFor="password">Password</Label>
-                <Link to="/forgot-password" className="text-sm text-kargon-red hover:underline">
+                <Link to="/forgot-password" className="text-sm text-primary hover:underline">
                   Forgot password?
                 </Link>
               </div>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isLoading}
-              />
+              <div className="relative">
+                <Input 
+                  id="password" 
+                  type={showPassword ? "text" : "password"} 
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)} 
+                  required 
+                />
+                <Button 
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 py-2"
+                  onClick={toggleShowPassword}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </Button>
+              </div>
             </div>
-            
-            <Button 
-              type="submit" 
-              className="w-full bg-kargon-red hover:bg-kargon-red/90 text-white"
-              disabled={isLoading || authLoading}
-            >
-              {isLoading ? (
-                <span className="flex items-center gap-2">
-                  <Loader className="h-4 w-4 animate-spin" />
-                  LOGGING IN...
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? (
+                <span className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Logging in...
                 </span>
-              ) : "LOGIN"}
+              ) : (
+                <span className="flex items-center justify-center">
+                  <LogIn size={16} className="mr-2" /> Sign in
+                </span>
+              )}
             </Button>
-            
-            <div className="text-center mt-4">
-              <p className="text-gray-600">
-                Don't have an account?{" "}
-                <Link to="/signup" className="text-kargon-red hover:underline font-medium">
-                  Sign up
-                </Link>
-              </p>
-            </div>
           </form>
-        </div>
-      </div>
+        </CardContent>
+        <CardFooter className="flex flex-col space-y-2">
+          <div className="text-center">
+            <span className="text-sm text-gray-500">Don't have an account?</span>{" "}
+            <Link to="/signup" className="text-sm font-medium text-primary hover:underline">
+              Sign up
+            </Link>
+          </div>
+          <div className="text-center">
+            <Link to="/admin-signup" className="text-sm font-medium text-primary hover:underline">
+              Register as Administrator
+            </Link>
+          </div>
+        </CardFooter>
+      </Card>
     </div>
   );
 };
